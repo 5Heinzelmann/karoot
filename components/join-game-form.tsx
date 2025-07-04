@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
+import { createClient } from '@/lib/supabase/client';
+import { GameStatus } from '@/lib/types';
 
 export function JoinGameForm() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export function JoinGameForm() {
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,15 +35,72 @@ export function JoinGameForm() {
     setIsLoading(true);
     
     try {
-      // In a real implementation, this would call an API to join the game
-      // For now, we'll just simulate a successful join and redirect
+      // Find the game with the provided code
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .select('id, status')
+        .eq('code', gameCode)
+        .single();
+      
+      if (gameError || !gameData) {
+        setError('Game not found. Please check the code and try again.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if the game is in the lobby status
+      if (gameData.status !== 'lobby') {
+        let statusMessage = 'This game is not currently accepting players.';
+        if (gameData.status === 'draft') {
+          statusMessage = 'This game is still being set up by the host.';
+        } else if (gameData.status === 'in_progress') {
+          statusMessage = 'This game is already in progress.';
+        } else if (gameData.status === 'finished') {
+          statusMessage = 'This game has already finished.';
+        }
+        
+        setError(statusMessage);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if the nickname is already taken in this game
+      const { data: existingParticipant, error: participantError } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('game_id', gameData.id)
+        .eq('name', nickname)
+        .maybeSingle();
+      
+      if (existingParticipant) {
+        setError('This nickname is already taken. Please choose another one.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Create a new participant record
+      const { data: newParticipant, error: createError } = await supabase
+        .from('participants')
+        .insert([
+          { game_id: gameData.id, name: nickname }
+        ])
+        .select()
+        .single();
+      
+      if (createError || !newParticipant) {
+        console.error('Error creating participant:', createError);
+        setError('Failed to join the game. Please try again.');
+        setIsLoading(false);
+        return;
+      }
       
       // Store participant info in session storage
       sessionStorage.setItem('nickname', nickname);
       sessionStorage.setItem('gameCode', gameCode);
+      sessionStorage.setItem('participantId', newParticipant.id);
       
       // Redirect to game page
-      router.push(`/game/${gameCode}`);
+      router.push(`/game/${gameData.id}`);
     } catch (err) {
       console.error('Error joining game:', err);
       setError('Failed to join game. Please check the game code and try again.');

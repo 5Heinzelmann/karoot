@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Game, Question, AnswerDistribution } from '@/lib/types';
+import { Game, Question, AnswerDistribution, Option } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
+import { createClient } from '@/lib/supabase/client';
 
 interface QuestionSummary {
   question: Question;
@@ -32,9 +33,61 @@ export function HostResultsView({
     setIsLoading(true);
 
     try {
-      // In a real implementation, this would call an API to create a new game
-      // For now, we'll just redirect to the home page
-      router.push('/');
+      const supabase = createClient();
+      
+      // Step 1: Create a new game with the same title but with status 'draft'
+      const { data: newGame, error: gameError } = await supabase
+        .from('games')
+        .insert({
+          title: `${game.title} (Copy)`,
+          status: 'draft',
+          current_question_index: 0
+        })
+        .select()
+        .single();
+      
+      if (gameError) throw gameError;
+      
+      // Step 2: Fetch questions for the current game
+      const { data: existingQuestions, error: questionsError } = await supabase
+        .from('questions')
+        .select('*, options(*)')
+        .eq('game_id', game.id)
+        .order('order', { ascending: true });
+      
+      if (questionsError) throw questionsError;
+      
+      // Step 3: Create new questions for the new game
+      for (const question of existingQuestions) {
+        // Create the question
+        const { data: newQuestion, error: newQuestionError } = await supabase
+          .from('questions')
+          .insert({
+            game_id: newGame.id,
+            text: question.text,
+            order: question.order
+          })
+          .select()
+          .single();
+        
+        if (newQuestionError) throw newQuestionError;
+        
+        // Create the options for this question
+        const optionsToInsert = question.options.map((option: Option) => ({
+          question_id: newQuestion.id,
+          text: option.text,
+          is_correct: option.is_correct
+        }));
+        
+        const { error: optionsError } = await supabase
+          .from('options')
+          .insert(optionsToInsert);
+        
+        if (optionsError) throw optionsError;
+      }
+      
+      // Redirect to the new game's host page
+      router.push(`/game/${newGame.id}/host?status=draft`);
     } catch (err) {
       console.error('Error creating new game:', err);
       setIsLoading(false);
@@ -45,8 +98,20 @@ export function HostResultsView({
     setIsLoading(true);
 
     try {
-      // In a real implementation, this would call an API to reset the game
-      // For now, we'll just redirect to the lobby
+      const supabase = createClient();
+      
+      // Reset the game status to lobby and reset current question index
+      const { error } = await supabase
+        .from('games')
+        .update({
+          status: 'lobby',
+          current_question_index: 0
+        })
+        .eq('id', game.id);
+      
+      if (error) throw error;
+      
+      // Redirect to the lobby
       router.push(`/game/${game.id}/host?status=lobby`);
     } catch (err) {
       console.error('Error resetting game:', err);

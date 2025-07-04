@@ -1,17 +1,61 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
+import { useAuth } from '@/lib/auth/auth-context';
+import { createClient } from '@/lib/supabase/client';
+import { GameStatus } from '@/lib/types';
 
 export function CreateGameForm() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, authLoading, router]);
+  
+  // Don't render the form if not authenticated
+  if (authLoading) {
+    return <div className="w-full max-w-md mx-auto p-6 text-center">Loading...</div>;
+  }
+  
+  if (!user) {
+    return null; // Will redirect in the useEffect
+  }
+
+  // Generate a unique 4-digit game code
+  const generateUniqueGameCode = async (): Promise<string> => {
+    const supabase = createClient();
+    let isUnique = false;
+    let code = '';
+    
+    while (!isUnique) {
+      // Generate a random 4-digit number (1000-9999)
+      code = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      // Check if the code already exists in the database
+      const { data, error } = await supabase
+        .from('games')
+        .select('code')
+        .eq('code', code)
+        .single();
+      
+      // If no data is returned, the code is unique
+      isUnique = !data && !error;
+    }
+    
+    return code;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,14 +70,32 @@ export function CreateGameForm() {
     setIsLoading(true);
     
     try {
-      // In a real implementation, this would call an API to create the game
-      // For now, we'll just simulate a successful creation and redirect
+      const supabase = createClient();
       
-      // Generate a random game ID (in a real app, this would come from the backend)
-      const gameId = Math.random().toString(36).substring(2, 10);
+      // Generate a unique game code
+      const gameCode = await generateUniqueGameCode();
+      
+      // Set the initial game status
+      const initialStatus: GameStatus = 'draft';
+      
+      // Create a new game in the database
+      const { data, error } = await supabase
+        .from('games')
+        .insert([
+          {
+            title,
+            host_id: user?.id,
+            status: initialStatus,
+            code: gameCode
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) throw error;
       
       // Redirect to game editor page
-      router.push(`/game/${gameId}/host`);
+      router.push(`/game/${data.id}/host`);
     } catch (err) {
       console.error('Error creating game:', err);
       setError('Failed to create game. Please try again.');

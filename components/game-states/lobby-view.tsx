@@ -5,6 +5,7 @@ import { Participant } from '@/lib/types';
 import { ParticipantsList } from '@/components/ui/participants-list';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
+import { createClient } from '@/lib/supabase/client';
 
 interface LobbyViewProps {
   gameId: string;
@@ -21,26 +22,68 @@ export function LobbyView({
 }: LobbyViewProps) {
   const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
   const [isWaiting, setIsWaiting] = useState(true);
+  const supabase = createClient();
 
-  // In a real implementation, this would use Supabase realtime subscriptions
-  // to listen for new participants and game status changes
+  // Use Supabase realtime subscriptions to listen for new participants
   useEffect(() => {
-    // Simulate new participants joining every few seconds
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7 && participants.length < 10) {
-        const newParticipant: Participant = {
-          id: Math.random().toString(36).substring(2, 10),
-          game_id: gameId,
-          name: `Player${Math.floor(Math.random() * 100)}`,
-          created_at: new Date().toISOString(),
-        };
-        
-        setParticipants((prev) => [...prev, newParticipant]);
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [gameId, participants.length]);
+    // Set initial participants
+    setParticipants(initialParticipants);
+    
+    // Subscribe to new participants joining the game
+    const participantsSubscription = supabase
+      .channel('public:participants')
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'participants',
+          filter: `game_id=eq.${gameId}`
+        },
+        (payload) => {
+          const newParticipant = payload.new as Participant;
+          setParticipants(current => {
+            // Check if participant already exists to avoid duplicates
+            if (current.some(p => p.id === newParticipant.id)) {
+              return current;
+            }
+            return [...current, newParticipant];
+          });
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(participantsSubscription);
+    };
+  }, [gameId, initialParticipants, supabase]);
+  
+  // Listen for game status changes
+  useEffect(() => {
+    // Subscribe to game status changes
+    const gameSubscription = supabase
+      .channel('public:games')
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`
+        },
+        (payload) => {
+          const updatedGame = payload.new;
+          
+          // If game status changed to in_progress, refresh the page to load the gameplay view
+          if (updatedGame.status === 'in_progress') {
+            window.location.reload();
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(gameSubscription);
+    };
+  }, [gameId, supabase]);
 
   return (
     <div className="w-full max-w-lg mx-auto p-4">

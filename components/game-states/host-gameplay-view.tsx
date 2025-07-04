@@ -8,6 +8,7 @@ import { AnswerDistribution as AnswerDistributionComponent } from '@/components/
 import { Button } from '@/components/ui/button';
 import { Timer } from '@/components/ui/timer';
 import { theme } from '@/lib/theme';
+import { createClient } from '@/lib/supabase/client';
 
 interface HostGameplayViewProps {
   game: Game;
@@ -31,53 +32,117 @@ export function HostGameplayView({
   const [isLastQuestion, setIsLastQuestion] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // In a real implementation, this would use Supabase realtime subscriptions
-  // to listen for answer submissions
+  // Initialize answer distribution when a new question is loaded
+  useEffect(() => {
+    if (!currentQuestion || !options.length) return;
+    
+    // Create initial distribution with zero counts for all options
+    const initialDistribution = options.map(option => ({
+      option_id: option.id,
+      option_text: option.text,
+      is_correct: option.is_correct,
+      count: 0,
+      percentage: 0,
+    }));
+    
+    setAnswerDistribution(initialDistribution);
+    setAnsweredCount(0);
+    
+    // Fetch any existing answers for this question (in case of reconnection)
+    const fetchExistingAnswers = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('answers')
+          .select('option_id')
+          .eq('question_id', currentQuestion.id);
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          // Count answers by option
+          const answerCounts: Record<string, number> = data.reduce((counts: Record<string, number>, answer) => {
+            counts[answer.option_id] = (counts[answer.option_id] || 0) + 1;
+            return counts;
+          }, {});
+          
+          // Update distribution with existing answers
+          setAnswerDistribution(prev => {
+            const newDistribution = prev.map(item => ({
+              ...item,
+              count: answerCounts[item.option_id] || 0,
+            }));
+            
+            // Recalculate percentages
+            const totalAnswers = newDistribution.reduce((sum, item) => sum + item.count, 0);
+            return newDistribution.map(item => ({
+              ...item,
+              percentage: totalAnswers > 0 ? Math.round((item.count / totalAnswers) * 100) : 0,
+            }));
+          });
+          
+          setAnsweredCount(data.length);
+        }
+      } catch (err) {
+        console.error('Error fetching existing answers:', err);
+      }
+    };
+    
+    fetchExistingAnswers();
+  }, [currentQuestion, options]);
 
-  // Simulate receiving answers
+  // Use Supabase realtime subscriptions to listen for answer submissions
   useEffect(() => {
     if (!currentQuestion || showingResults) return;
 
-    const interval = setInterval(() => {
-      if (answeredCount < totalParticipants) {
-        // Randomly select an option to simulate an answer
-        const randomOptionIndex = Math.floor(Math.random() * options.length);
-        const randomOption = options[randomOptionIndex];
-        
-        // Update answer distribution
-        setAnswerDistribution(prev => {
-          const newDistribution = [...prev];
-          const optionIndex = newDistribution.findIndex(item => item.option_id === randomOption.id);
+    const supabase = createClient();
+    
+    // Subscribe to new answers for the current question
+    const answersSubscription = supabase
+      .channel('public:answers')
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'answers',
+          filter: `question_id=eq.${currentQuestion.id}`
+        },
+        async (payload) => {
+          const newAnswer = payload.new;
           
-          if (optionIndex >= 0) {
-            newDistribution[optionIndex] = {
-              ...newDistribution[optionIndex],
-              count: newDistribution[optionIndex].count + 1,
-            };
-          } else {
-            newDistribution.push({
-              option_id: randomOption.id,
-              option_text: randomOption.text,
-              is_correct: randomOption.is_correct,
-              count: 1,
-              percentage: 0,
+          try {
+            // Update answer distribution
+            setAnswerDistribution(prev => {
+              const newDistribution = [...prev];
+              const optionIndex = newDistribution.findIndex(item => item.option_id === newAnswer.option_id);
+              
+              if (optionIndex >= 0) {
+                newDistribution[optionIndex] = {
+                  ...newDistribution[optionIndex],
+                  count: newDistribution[optionIndex].count + 1,
+                };
+              }
+              
+              // Recalculate percentages
+              const totalAnswers = newDistribution.reduce((sum, item) => sum + item.count, 0);
+              return newDistribution.map(item => ({
+                ...item,
+                percentage: Math.round((item.count / totalAnswers) * 100),
+              }));
             });
+            
+            setAnsweredCount(prev => prev + 1);
+          } catch (err) {
+            console.error('Error processing new answer:', err);
           }
-          
-          // Recalculate percentages
-          const totalAnswers = newDistribution.reduce((sum, item) => sum + item.count, 0);
-          return newDistribution.map(item => ({
-            ...item,
-            percentage: Math.round((item.count / totalAnswers) * 100),
-          }));
-        });
-        
-        setAnsweredCount(prev => prev + 1);
-      }
-    }, 1000 + Math.random() * 2000);
-
-    return () => clearInterval(interval);
-  }, [currentQuestion, options, answeredCount, totalParticipants, showingResults]);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(answersSubscription);
+    };
+  }, [currentQuestion, showingResults]);
 
   const handleTimerComplete = () => {
     setShowingResults(true);
@@ -87,38 +152,62 @@ export function HostGameplayView({
     setIsLoading(true);
 
     try {
-      // In a real implementation, this would call an API to move to the next question
-      // For now, we'll just simulate a successful update
+      const supabase = createClient();
       
-      // Check if this is the last question (for demo purposes, we'll randomly decide)
-      const nextIsLast = Math.random() > 0.7;
+      // Get the current question index from the game
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .select('current_question_index')
+        .eq('id', game.id)
+        .single();
+        
+      if (gameError) throw gameError;
       
-      if (nextIsLast) {
-        setIsLastQuestion(true);
-      }
+      // Calculate the next question index
+      const nextQuestionIndex = (gameData.current_question_index || 0) + 1;
       
-      // Simulate new question
-      const newQuestion: Question = {
-        id: Math.random().toString(36).substring(2, 10),
-        game_id: game.id,
-        text: `What is ${Math.floor(Math.random() * 10)} + ${Math.floor(Math.random() * 10)}?`,
-        order: (currentQuestion?.order || 0) + 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      // Get all questions for this game to determine if we're at the last one
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('id')
+        .eq('game_id', game.id)
+        .order('order', { ascending: true });
+        
+      if (questionsError) throw questionsError;
       
-      const correctAnswer = Math.floor(Math.random() * 4);
-      const newOptions: Option[] = Array(4).fill(null).map((_, index) => ({
-        id: Math.random().toString(36).substring(2, 10),
-        question_id: newQuestion.id,
-        text: `Option ${index + 1}`,
-        is_correct: index === correctAnswer,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }));
+      const isLast = nextQuestionIndex >= questionsData.length - 1;
+      setIsLastQuestion(isLast);
       
-      setCurrentQuestion(newQuestion);
-      setOptions(newOptions);
+      // Update the game's current question index
+      const { error: updateError } = await supabase
+        .from('games')
+        .update({ current_question_index: nextQuestionIndex })
+        .eq('id', game.id);
+      
+      if (updateError) throw updateError;
+      
+      // Fetch the next question
+      const { data: questionData, error: questionError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('game_id', game.id)
+        .order('order', { ascending: true })
+        .range(nextQuestionIndex, nextQuestionIndex)
+        .single();
+      
+      if (questionError || !questionData) throw questionError;
+      
+      // Fetch options for the next question
+      const { data: optionsData, error: optionsError } = await supabase
+        .from('options')
+        .select('*')
+        .eq('question_id', questionData.id);
+      
+      if (optionsError) throw optionsError;
+      
+      // Update state with the new question and options
+      setCurrentQuestion(questionData);
+      setOptions(optionsData || []);
       setAnswerDistribution([]);
       setAnsweredCount(0);
       setShowingResults(false);
@@ -133,8 +222,15 @@ export function HostGameplayView({
     setIsLoading(true);
 
     try {
-      // In a real implementation, this would call an API to end the game
-      // For now, we'll just simulate a successful update and redirect
+      const supabase = createClient();
+      
+      // Update the game status to finished
+      const { error: updateError } = await supabase
+        .from('games')
+        .update({ status: 'finished' })
+        .eq('id', game.id);
+      
+      if (updateError) throw updateError;
       
       // Redirect to the finished game page
       router.push(`/game/${game.id}/host?status=finished`);

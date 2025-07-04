@@ -7,6 +7,7 @@ import { ParticipantsList } from '@/components/ui/participants-list';
 import { GameCodeDisplay } from '@/components/ui/game-code-display';
 import { Button } from '@/components/ui/button';
 import { theme } from '@/lib/theme';
+import { createClient } from '@/lib/supabase/client';
 
 interface HostLobbyViewProps {
   game: Game;
@@ -21,25 +22,40 @@ export function HostLobbyView({
   const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
   const [isStarting, setIsStarting] = useState(false);
 
-  // In a real implementation, this would use Supabase realtime subscriptions
-  // to listen for new participants
+  // Use Supabase realtime subscriptions to listen for new participants
   useEffect(() => {
-    // Simulate new participants joining every few seconds
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7 && participants.length < 10) {
-        const newParticipant: Participant = {
-          id: Math.random().toString(36).substring(2, 10),
-          game_id: game.id,
-          name: `Player${Math.floor(Math.random() * 100)}`,
-          created_at: new Date().toISOString(),
-        };
-        
-        setParticipants((prev) => [...prev, newParticipant]);
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [game.id, participants.length]);
+    // Set initial participants
+    setParticipants(initialParticipants);
+    
+    const supabase = createClient();
+    
+    // Subscribe to new participants joining the game
+    const participantsSubscription = supabase
+      .channel('public:participants')
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'participants',
+          filter: `game_id=eq.${game.id}`
+        },
+        (payload) => {
+          const newParticipant = payload.new as Participant;
+          setParticipants(current => {
+            // Check if participant already exists to avoid duplicates
+            if (current.some(p => p.id === newParticipant.id)) {
+              return current;
+            }
+            return [...current, newParticipant];
+          });
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(participantsSubscription);
+    };
+  }, [game.id, initialParticipants]);
 
   const handleStartGame = async () => {
     if (participants.length === 0) {
@@ -50,8 +66,16 @@ export function HostLobbyView({
     setIsStarting(true);
 
     try {
-      // In a real implementation, this would call an API to update the game status
-      // For now, we'll just simulate a successful update and redirect
+      const supabase = createClient();
+      
+      // Update game status in the database
+      const { error } = await supabase
+        .from('games')
+        .update({ status: 'in_progress' })
+        .eq('id', game.id)
+        .eq('host_id', game.host_id);
+        
+      if (error) throw error;
       
       // Redirect to the in-progress game page
       router.push(`/game/${game.id}/host?status=in_progress`);

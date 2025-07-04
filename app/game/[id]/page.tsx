@@ -1,77 +1,29 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Game, Participant, Question, Option, Answer } from '@/lib/types';
 import { LobbyView } from '@/components/game-states/lobby-view';
 import { GameplayView } from '@/components/game-states/gameplay-view';
 import { ResultsView } from '@/components/game-states/results-view';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
-
-// Mock data - in a real app, this would come from the backend
-const mockGame: Game = {
-  id: '123',
-  code: 'ABCD',
-  title: 'Quiz Game',
-  status: 'lobby',
-  host_id: 'host-123',
-  current_question_index: 0,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+import { createClient } from '@/lib/supabase/client';
 
 // Extend Participant type with scores for our UI
 interface ParticipantWithScore extends Participant {
   score: number;
 }
 
-const mockParticipants: ParticipantWithScore[] = [
-  { id: 'p1', game_id: '123', name: 'Player 1', score: 0, created_at: new Date().toISOString() },
-  { id: 'p2', game_id: '123', name: 'Player 2', score: 0, created_at: new Date().toISOString() },
-  { id: 'p3', game_id: '123', name: 'Player 3', score: 0, created_at: new Date().toISOString() },
-];
-
-const mockQuestions: Question[] = [
-  {
-    id: 'q1',
-    game_id: '123',
-    text: 'What color is a carrot?',
-    order: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'q2',
-    game_id: '123',
-    text: 'How many sides does a triangle have?',
-    order: 2,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
-const mockOptions: Record<string, Option[]> = {
-  q1: [
-    { id: 'o1', question_id: 'q1', text: 'Orange', is_correct: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o2', question_id: 'q1', text: 'Blue', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o3', question_id: 'q1', text: 'Green', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o4', question_id: 'q1', text: 'Purple', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ],
-  q2: [
-    { id: 'o5', question_id: 'q2', text: 'Three', is_correct: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o6', question_id: 'q2', text: 'Four', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o7', question_id: 'q2', text: 'Five', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o8', question_id: 'q2', text: 'Six', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ],
-};
-
 export default function GamePage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const gameId = params.id as string;
-  const [game, setGame] = useState<Game>(mockGame);
-  const [participants, setParticipants] = useState<ParticipantWithScore[]>(mockParticipants);
+  const supabase = createClient();
+  
+  const [game, setGame] = useState<Game | null>(null);
+  const [participants, setParticipants] = useState<ParticipantWithScore[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [currentOptions, setCurrentOptions] = useState<Option[]>([]);
   const [participantName, setParticipantName] = useState<string>('');
@@ -82,10 +34,10 @@ export default function GamePage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize participant name from localStorage if available
+  // Initialize participant data from sessionStorage
   useEffect(() => {
-    const storedName = localStorage.getItem('participantName');
-    const storedId = localStorage.getItem('participantId');
+    const storedName = sessionStorage.getItem('nickname');
+    const storedId = sessionStorage.getItem('participantId');
     
     if (storedName) {
       setParticipantName(storedName);
@@ -94,75 +46,176 @@ export default function GamePage() {
     if (storedId) {
       setParticipantId(storedId);
     }
-    
-    setIsLoading(false);
   }, []);
 
   // Fetch game data
   useEffect(() => {
-    // In a real app, this would be an API call
-    // For now, we'll use the mock data
-    const status = searchParams.get('status') || game.status;
-    setGame({ ...mockGame, status: status as 'draft' | 'lobby' | 'in_progress' | 'finished' });
-    
-    if (status === 'in_progress') {
-      setCurrentQuestion(mockQuestions[0]);
-      setCurrentOptions(mockOptions[mockQuestions[0].id]);
-      
-      // Start the timer
-      const timer = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
+    async function fetchGameData() {
+      try {
+        // Fetch game details
+        const { data: gameData, error: gameError } = await supabase
+          .from('games')
+          .select('*')
+          .eq('id', gameId)
+          .single();
+        
+        if (gameError || !gameData) {
+          setError('Game not found. Please check the code and try again.');
+          setIsLoading(false);
+          return;
+        }
+        
+        setGame(gameData);
+        
+        // Fetch participants
+        const { data: participantsData, error: participantsError } = await supabase
+          .from('participants')
+          .select('*')
+          .eq('game_id', gameId);
+        
+        if (!participantsError && participantsData) {
+          // Convert to ParticipantWithScore
+          const participantsWithScore = participantsData.map(p => ({
+            ...p,
+            score: 0 // Initialize scores to 0
+          }));
+          
+          setParticipants(participantsWithScore);
+        }
+        
+        // If game is in progress, fetch current question and options
+        if (gameData.status === 'in_progress') {
+          const { data: questionsData, error: questionsError } = await supabase
+            .from('questions')
+            .select('*')
+            .eq('game_id', gameId)
+            .order('order', { ascending: true });
+          
+          if (!questionsError && questionsData && questionsData.length > 0) {
+            const currentQuestionIndex = gameData.current_question_index;
+            const currentQuestion = questionsData[currentQuestionIndex];
+            setCurrentQuestion(currentQuestion);
+            
+            // Fetch options for the current question
+            const { data: optionsData, error: optionsError } = await supabase
+              .from('options')
+              .select('*')
+              .eq('question_id', currentQuestion.id);
+            
+            if (!optionsError && optionsData) {
+              setCurrentOptions(optionsData);
+            }
+            
+            // Start the timer
+            const timer = setInterval(() => {
+              setTimeRemaining((prev) => {
+                if (prev <= 1) {
+                  clearInterval(timer);
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+            
+            return () => clearInterval(timer);
           }
-          return prev - 1;
-        });
-      }, 1000);
-      
-      return () => clearInterval(timer);
-    } else if (status === 'finished') {
-      // Update scores for the mock data
-      setParticipants([
-        { ...mockParticipants[0], score: 1200 },
-        { ...mockParticipants[1], score: 800 },
-        { ...mockParticipants[2], score: 500 },
-      ]);
+        }
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching game data:', err);
+        setError('Failed to load game data. Please try again.');
+        setIsLoading(false);
+      }
     }
-  }, [gameId, searchParams, game.status]);
-
-  const handleJoinGame = async (name: string) => {
-    try {
-      // In a real app, this would be an API call
-      // For now, we'll simulate joining the game
-      const newParticipantId = `p${Math.random().toString(36).substring(2, 10)}`;
-      const newParticipant: ParticipantWithScore = {
-        id: newParticipantId,
-        game_id: gameId,
-        name,
-        score: 0,
-        created_at: new Date().toISOString(),
-      };
-      
-      setParticipants([...participants, newParticipant]);
-      setParticipantName(name);
-      setParticipantId(newParticipantId);
-      
-      // Store in localStorage for persistence
-      localStorage.setItem('participantName', name);
-      localStorage.setItem('participantId', newParticipantId);
-    } catch (err) {
-      console.error('Error joining game:', err);
-      setError('Failed to join the game. Please try again.');
-    }
-  };
+    
+    fetchGameData();
+    
+    // Set up real-time subscription for participants
+    const participantsSubscription = supabase
+      .channel('public:participants')
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'participants',
+          filter: `game_id=eq.${gameId}`
+        },
+        (payload) => {
+          const newParticipant = payload.new as Participant;
+          setParticipants(current => [
+            ...current,
+            { ...newParticipant, score: 0 }
+          ]);
+        }
+      )
+      .subscribe();
+    
+    // Set up real-time subscription for game status changes
+    const gameSubscription = supabase
+      .channel('public:games')
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`
+        },
+        async (payload) => {
+          const updatedGame = payload.new as Game;
+          setGame(updatedGame);
+          
+          // If game status changed or current question changed
+          if (updatedGame.status !== game?.status ||
+              updatedGame.current_question_index !== game?.current_question_index) {
+            
+            // If game status changed to in_progress, fetch the current question
+            if (updatedGame.status === 'in_progress') {
+              try {
+                // Fetch current question
+                const { data: questionsData, error: questionsError } = await supabase
+                  .from('questions')
+                  .select('*')
+                  .eq('game_id', gameId)
+                  .order('order', { ascending: true });
+                
+                if (!questionsError && questionsData && questionsData.length > 0) {
+                  const currentQuestionIndex = updatedGame.current_question_index;
+                  const currentQuestion = questionsData[currentQuestionIndex];
+                  setCurrentQuestion(currentQuestion);
+                  setIsAnswerSubmitted(false);
+                  setSelectedOption(null);
+                  setTimeRemaining(15);
+                  
+                  // Fetch options for the current question
+                  const { data: optionsData, error: optionsError } = await supabase
+                    .from('options')
+                    .select('*')
+                    .eq('question_id', currentQuestion.id);
+                  
+                  if (!optionsError && optionsData) {
+                    setCurrentOptions(optionsData);
+                  }
+                }
+              } catch (err) {
+                console.error('Error fetching question data:', err);
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(participantsSubscription);
+      supabase.removeChannel(gameSubscription);
+    };
+  }, [gameId, supabase]);
 
   const handleSubmitAnswer = async (optionId: string) => {
-    if (isAnswerSubmitted || !currentQuestion) return;
+    if (isAnswerSubmitted || !currentQuestion || !participantId) return;
     
     try {
-      // In a real app, this would be an API call
-      // For now, we'll simulate submitting an answer
       setSelectedOption(optionId);
       setIsAnswerSubmitted(true);
       
@@ -172,12 +225,46 @@ export default function GamePage() {
       // Calculate score based on time remaining
       const score = isCorrect ? timeRemaining * 100 : 0;
       
-      // Update participant score
-      if (participantId) {
-        setParticipants(participants.map(p => 
-          p.id === participantId ? { ...p, score: (p.score || 0) + score } : p
-        ));
+      // Record the answer in the database
+      const { error: answerError } = await supabase
+        .from('answers')
+        .insert([{
+          participant_id: participantId,
+          question_id: currentQuestion.id,
+          option_id: optionId,
+          response_time_ms: (15 - timeRemaining) * 1000, // Convert seconds to milliseconds
+          score: score // Store the score with the answer
+        }]);
+      
+      if (answerError) {
+        console.error('Error recording answer:', answerError);
       }
+      
+      // Update participant score in the database
+      const { data: currentParticipant, error: participantError } = await supabase
+        .from('participants')
+        .select('score')
+        .eq('id', participantId)
+        .single();
+        
+      if (!participantError && currentParticipant) {
+        const currentScore = currentParticipant.score || 0;
+        const newScore = currentScore + score;
+        
+        const { error: updateError } = await supabase
+          .from('participants')
+          .update({ score: newScore })
+          .eq('id', participantId);
+          
+        if (updateError) {
+          console.error('Error updating participant score:', updateError);
+        }
+      }
+      
+      // Update participant score locally
+      setParticipants(participants.map(p =>
+        p.id === participantId ? { ...p, score: (p.score || 0) + score } : p
+      ));
     } catch (err) {
       console.error('Error submitting answer:', err);
       setError('Failed to submit your answer. Please try again.');
@@ -214,6 +301,23 @@ export default function GamePage() {
   }
 
   // Render the appropriate view based on game status
+  if (!game) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-xl font-bold mb-2">Game Not Found</h1>
+          <p className="text-text-muted mb-4">The game you're looking for doesn't exist.</p>
+          <a
+            href="/"
+            className="px-4 py-2 bg-primary text-white rounded-md inline-block"
+          >
+            Back to Home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   switch (game.status) {
     case 'lobby':
       return (
@@ -234,9 +338,58 @@ export default function GamePage() {
         />
       );
     case 'finished':
-      // Calculate correct answers (in a real app, this would come from the backend)
-      const correctAnswers = 3;
-      const totalQuestions = 5;
+      // Fetch participant's answers and calculate score
+      const [correctAnswers, setCorrectAnswers] = useState(0);
+      const [totalQuestions, setTotalQuestions] = useState(0);
+      const [isLoadingResults, setIsLoadingResults] = useState(true);
+      
+      useEffect(() => {
+        async function fetchResults() {
+          if (!participantId || !game) return;
+          
+          try {
+            // Get all questions for this game
+            const { data: questionsData, error: questionsError } = await supabase
+              .from('questions')
+              .select('id')
+              .eq('game_id', game.id);
+              
+            if (questionsError) throw questionsError;
+            
+            setTotalQuestions(questionsData.length);
+            
+            // Get participant's answers
+            const { data: answersData, error: answersError } = await supabase
+              .from('answers')
+              .select('*, options(is_correct)')
+              .eq('participant_id', participantId);
+              
+            if (answersError) throw answersError;
+            
+            // Count correct answers
+            const correct = answersData.filter(answer => answer.options.is_correct).length;
+            setCorrectAnswers(correct);
+            
+            setIsLoadingResults(false);
+          } catch (err) {
+            console.error('Error fetching results:', err);
+            setIsLoadingResults(false);
+          }
+        }
+        
+        fetchResults();
+      }, [game.id, participantId, supabase]);
+      
+      if (isLoadingResults) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="text-center">
+              <CarrotIcon size={60} color={theme.colors.primary.DEFAULT} className="mx-auto animate-bounce" />
+              <p className="mt-4 text-text-muted">Loading your results...</p>
+            </div>
+          </div>
+        );
+      }
       
       return (
         <ResultsView
@@ -252,7 +405,7 @@ export default function GamePage() {
           <div className="text-center">
             <h1 className="text-xl font-bold mb-2">Game Not Available</h1>
             <p className="text-text-muted mb-4">This game is not currently active.</p>
-            <a 
+            <a
               href="/"
               className="px-4 py-2 bg-primary text-white rounded-md inline-block"
             >

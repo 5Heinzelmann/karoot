@@ -9,6 +9,8 @@ import { HostResultsView } from '@/components/game-states/host-results-view';
 import { GameEditor } from '@/components/game-states/game-editor';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/auth-context';
 
 // Mock data - in a real app, this would come from the backend
 const mockGame: Game = {
@@ -86,6 +88,7 @@ export default function HostPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const gameId = params.id as string;
+  const { user } = useAuth();
   const [game, setGame] = useState<Game>(mockGame);
   const [participants, setParticipants] = useState<ParticipantWithScore[]>(mockParticipants);
   const [questions, setQuestions] = useState<Question[]>(mockQuestions);
@@ -98,39 +101,155 @@ export default function HostPage() {
 
   // Fetch game data
   useEffect(() => {
-    // In a real app, this would be an API call
-    // For now, we'll use the mock data
-    const status = searchParams.get('status') || game.status;
-    setGame({ ...mockGame, status: status as 'draft' | 'lobby' | 'in_progress' | 'finished' });
-    setIsLoading(false);
-    
-    if (status === 'in_progress') {
-      // Start the timer
-      const timer = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    const fetchGameData = async () => {
+      if (!user) return;
       
-      return () => clearInterval(timer);
-    } else if (status === 'finished') {
-      // Update scores for the mock data
-      setParticipants([
-        { ...mockParticipants[0], score: 1200 },
-        { ...mockParticipants[1], score: 800 },
-        { ...mockParticipants[2], score: 500 },
-      ]);
-    }
-  }, [gameId, searchParams, game.status]);
+      try {
+        setIsLoading(true);
+        const supabase = createClient();
+        
+        // Get game data
+        const { data: gameData, error: gameError } = await supabase
+          .from('games')
+          .select('*')
+          .eq('id', gameId)
+          .single();
+          
+        if (gameError) throw gameError;
+        
+        // Check if user is the game host
+        if (gameData.host_id !== user.id) {
+          setError('You do not have permission to access this game.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Override status from URL if provided
+        const status = searchParams.get('status') || gameData.status;
+        setGame({ ...gameData, status: status as 'draft' | 'lobby' | 'in_progress' | 'finished' });
+        
+        // Get participants
+        const { data: participantsData, error: participantsError } = await supabase
+          .from('participants')
+          .select('*')
+          .eq('game_id', gameId);
+          
+        if (participantsError) throw participantsError;
+        
+        // Transform participants to include score
+        const participantsWithScore = participantsData.map(p => ({
+          ...p,
+          score: 0 // We'll calculate this later
+        }));
+        
+        setParticipants(participantsWithScore);
+        
+        // Get questions
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('questions')
+          .select('*')
+          .eq('game_id', gameId)
+          .order('order', { ascending: true });
+          
+        if (questionsError) throw questionsError;
+        
+        setQuestions(questionsData);
+        
+        // Get options for all questions
+        const optionsRecord: Record<string, Option[]> = {};
+        
+        for (const question of questionsData) {
+          const { data: optionsData, error: optionsError } = await supabase
+            .from('options')
+            .select('*')
+            .eq('question_id', question.id);
+            
+          if (optionsError) throw optionsError;
+          
+          optionsRecord[question.id] = optionsData;
+        }
+        
+        setOptions(optionsRecord);
+        
+        // Fetch answer distributions if game is finished
+        if (status === 'finished') {
+          const answerDistributionsRecord: Record<string, AnswerDistribution[]> = {};
+          
+          for (const question of questionsData) {
+            // Get all answers for this question
+            const { data: answersData, error: answersError } = await supabase
+              .from('answers')
+              .select('*, options(*)')
+              .eq('question_id', question.id);
+              
+            if (answersError) throw answersError;
+            
+            // Get all options for this question
+            const questionOptions = optionsRecord[question.id];
+            
+            // Calculate distribution
+            const distribution: AnswerDistribution[] = questionOptions.map(option => {
+              const answersForOption = answersData.filter(a => a.option_id === option.id);
+              const count = answersForOption.length;
+              const percentage = answersData.length > 0
+                ? Math.round((count / answersData.length) * 100)
+                : 0;
+                
+              return {
+                option_id: option.id,
+                option_text: option.text,
+                is_correct: option.is_correct,
+                count,
+                percentage
+              };
+            });
+            
+            answerDistributionsRecord[question.id] = distribution;
+          }
+          
+          setAnswerDistributions(answerDistributionsRecord);
+        }
+        
+        if (status === 'in_progress') {
+          // Start the timer
+          const timer = setInterval(() => {
+            setTimeRemaining((prev) => {
+              if (prev <= 1) {
+                clearInterval(timer);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+          
+          return () => clearInterval(timer);
+        }
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching game data:', err);
+        setError('Failed to load game data. Please try again.');
+        setIsLoading(false);
+      }
+    };
+    
+    fetchGameData();
+  }, [gameId, searchParams, user]);
 
   const handleStartGame = async () => {
     try {
-      // In a real app, this would be an API call
-      // For now, we'll simulate starting the game
+      const supabase = createClient();
+      
+      // Update game status in the database
+      const { error } = await supabase
+        .from('games')
+        .update({ status: 'in_progress' })
+        .eq('id', gameId)
+        .eq('host_id', user?.id);
+        
+      if (error) throw error;
+      
+      // Redirect to the in-progress view
       window.location.href = `/game/${gameId}/host?status=in_progress`;
     } catch (err) {
       console.error('Error starting game:', err);
@@ -140,14 +259,25 @@ export default function HostPage() {
 
   const handleNextQuestion = async () => {
     try {
-      // In a real app, this would be an API call
-      // For now, we'll simulate moving to the next question
+      const supabase = createClient();
+      
       if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        const nextIndex = currentQuestionIndex + 1;
+        
+        // Update current question index in the database
+        const { error } = await supabase
+          .from('games')
+          .update({ current_question_index: nextIndex })
+          .eq('id', gameId)
+          .eq('host_id', user?.id);
+          
+        if (error) throw error;
+        
+        setCurrentQuestionIndex(nextIndex);
         setTimeRemaining(15);
       } else {
         // End the game if we've gone through all questions
-        window.location.href = `/game/${gameId}/host?status=finished`;
+        await handleEndGame();
       }
     } catch (err) {
       console.error('Error moving to next question:', err);
@@ -157,8 +287,18 @@ export default function HostPage() {
 
   const handleEndGame = async () => {
     try {
-      // In a real app, this would be an API call
-      // For now, we'll simulate ending the game
+      const supabase = createClient();
+      
+      // Update game status in the database
+      const { error } = await supabase
+        .from('games')
+        .update({ status: 'finished' })
+        .eq('id', gameId)
+        .eq('host_id', user?.id);
+        
+      if (error) throw error;
+      
+      // Redirect to the finished view
       window.location.href = `/game/${gameId}/host?status=finished`;
     } catch (err) {
       console.error('Error ending game:', err);

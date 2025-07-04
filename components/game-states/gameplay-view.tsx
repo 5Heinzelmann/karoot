@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Question, Option } from '@/lib/types';
+import { Question, Option, Game } from '@/lib/types';
 import { QuestionDisplay } from '@/components/ui/question-display';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
+import { createClient } from '@/lib/supabase/client';
 
 interface GameplayViewProps {
   gameId: string;
@@ -25,65 +26,109 @@ export function GameplayView({
   const [showFeedback, setShowFeedback] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState(false);
   const [waitingForNextQuestion, setWaitingForNextQuestion] = useState(false);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
 
-  // In a real implementation, this would use Supabase realtime subscriptions
-  // to listen for game updates and new questions
+  // Use Supabase realtime subscriptions to listen for game updates and new questions
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Subscribe to game updates (status changes and current question index changes)
+    const gameSubscription = supabase
+      .channel('public:games')
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`
+        },
+        async (payload) => {
+          const updatedGame = payload.new as Game;
+          
+          // If game status changed to finished, redirect to results page
+          if (updatedGame.status === 'finished') {
+            window.location.href = `/game/${gameId}?status=finished`;
+            return;
+          }
+          
+          // If current question index changed, fetch the new question and options
+          if (currentQuestion && updatedGame.current_question_index !== currentQuestion.order - 1) {
+            setWaitingForNextQuestion(true);
+            
+            try {
+              // Fetch the new question
+              const { data: questionsData, error: questionsError } = await supabase
+                .from('questions')
+                .select('*')
+                .eq('game_id', gameId)
+                .eq('order', updatedGame.current_question_index + 1)
+                .single();
+              
+              if (questionsError || !questionsData) throw questionsError;
+              
+              // Fetch options for the new question
+              const { data: optionsData, error: optionsError } = await supabase
+                .from('options')
+                .select('*')
+                .eq('question_id', questionsData.id);
+              
+              if (optionsError) throw optionsError;
+              
+              // Update state with new question and options
+              setTimeout(() => {
+                setCurrentQuestion(questionsData);
+                setOptions(optionsData);
+                setSelectedOptionId(null);
+                setShowFeedback(false);
+                setWaitingForNextQuestion(false);
+                setQuestionStartTime(Date.now()); // Reset the timer for the new question
+              }, 1000);
+            } catch (err) {
+              console.error('Error fetching new question:', err);
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(gameSubscription);
+    };
+  }, [gameId, currentQuestion]);
 
   const handleAnswer = async (optionId: string) => {
     setSelectedOptionId(optionId);
     
     try {
-      // In a real implementation, this would call an API to submit the answer
-      // For now, we'll just simulate a successful submission
+      const supabase = createClient();
       
       // Check if the answer is correct
       const selectedOption = options.find(option => option.id === optionId);
       const isCorrect = selectedOption?.is_correct || false;
       
-      // Show feedback after a short delay
-      setTimeout(() => {
-        setIsAnswerCorrect(isCorrect);
-        setShowFeedback(true);
-        
-        // After showing feedback, simulate waiting for the next question
-        setTimeout(() => {
-          setWaitingForNextQuestion(true);
-          
-          // Simulate receiving a new question after a delay
-          setTimeout(() => {
-            if (Math.random() > 0.7) {
-              // Simulate end of game
-              window.location.href = `/game/${gameId}?status=finished`;
-            } else {
-              // Simulate new question
-              const newQuestion: Question = {
-                id: Math.random().toString(36).substring(2, 10),
-                game_id: gameId,
-                text: `What is ${Math.floor(Math.random() * 10)} + ${Math.floor(Math.random() * 10)}?`,
-                order: (currentQuestion?.order || 0) + 1,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              };
-              
-              const correctAnswer = Math.floor(Math.random() * 4);
-              const newOptions: Option[] = Array(4).fill(null).map((_, index) => ({
-                id: Math.random().toString(36).substring(2, 10),
-                question_id: newQuestion.id,
-                text: `Option ${index + 1}`,
-                is_correct: index === correctAnswer,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }));
-              
-              setCurrentQuestion(newQuestion);
-              setOptions(newOptions);
-              setSelectedOptionId(null);
-              setShowFeedback(false);
-              setWaitingForNextQuestion(false);
-            }
-          }, 2000);
-        }, 3000);
-      }, 1000);
+      // Calculate actual response time in milliseconds
+      const responseTimeMs = Date.now() - questionStartTime;
+      
+      // Submit the answer to Supabase
+      const { error: answerError } = await supabase
+        .from('answers')
+        .insert({
+          participant_id: participantId,
+          question_id: currentQuestion?.id,
+          option_id: optionId,
+          response_time_ms: responseTimeMs
+        });
+      
+      if (answerError) {
+        console.error('Error submitting answer:', answerError);
+        return;
+      }
+      
+      // Show feedback immediately
+      setIsAnswerCorrect(isCorrect);
+      setShowFeedback(true);
+      
+      // The next question will be handled by the Supabase realtime subscription
     } catch (err) {
       console.error('Error submitting answer:', err);
     }
@@ -136,6 +181,18 @@ export function GameplayView({
           showCorrectAnswer={showFeedback}
           selectedOptionId={selectedOptionId || undefined}
           disabled={!!selectedOptionId}
+          showTimer={true}
+          timerDuration={15}
+          onTimerComplete={() => {
+            if (!selectedOptionId) {
+              // If the player hasn't answered when the timer completes,
+              // we'll submit a "timed out" answer with a random option
+              const randomOptionId = options.length > 0 ? options[0].id : null;
+              if (randomOptionId) {
+                handleAnswer(randomOptionId);
+              }
+            }
+          }}
         />
       </div>
 

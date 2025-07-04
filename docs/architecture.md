@@ -457,16 +457,4 @@ export async function addQuestion(gameId: string, text: string, order: number) {
 ```
 
 ## 7. Server Actions (Next.js)
-
-For form submissions and data mutations, we'll use Next.js Server Actions to handle server-side operations securely:
-
-```typescript
-// src/app/actions/game-actions.ts
-'use server'
-
-import { createGame, updateGameStatus } from '@/lib/data/games';
-import { createServerClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
-
-export async function createNewGame(formData: FormData) {
-  
+For form submissions and data mutations, we'll use Next.js Server Actions to handle server-side operations securely
