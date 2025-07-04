@@ -34,7 +34,12 @@ export function HostGameplayView({
 
   // Initialize answer distribution when a new question is loaded
   useEffect(() => {
-    if (!currentQuestion || !options.length) return;
+    if (!currentQuestion || !options.length) {
+      console.log("Host gameplay: No current question or options available");
+      return;
+    }
+    
+    console.log("Host gameplay: Initializing for question:", currentQuestion.id);
     
     // Create initial distribution with zero counts for all options
     const initialDistribution = options.map(option => ({
@@ -51,15 +56,20 @@ export function HostGameplayView({
     // Fetch any existing answers for this question (in case of reconnection)
     const fetchExistingAnswers = async () => {
       try {
+        console.log("Host gameplay: Fetching existing answers for question:", currentQuestion.id);
         const supabase = createClient();
         const { data, error } = await supabase
           .from('answers')
           .select('option_id')
           .eq('question_id', currentQuestion.id);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Host gameplay: Error fetching answers:", error);
+          throw error;
+        }
         
         if (data && data.length > 0) {
+          console.log("Host gameplay: Found existing answers:", data.length);
           // Count answers by option
           const answerCounts: Record<string, number> = data.reduce((counts: Record<string, number>, answer) => {
             counts[answer.option_id] = (counts[answer.option_id] || 0) + 1;
@@ -82,6 +92,8 @@ export function HostGameplayView({
           });
           
           setAnsweredCount(data.length);
+        } else {
+          console.log("Host gameplay: No existing answers found");
         }
       } catch (err) {
         console.error('Error fetching existing answers:', err);
@@ -93,8 +105,12 @@ export function HostGameplayView({
 
   // Use Supabase realtime subscriptions to listen for answer submissions
   useEffect(() => {
-    if (!currentQuestion || showingResults) return;
+    if (!currentQuestion || showingResults) {
+      console.log("Host gameplay: Skipping answer subscription setup - no question or showing results");
+      return;
+    }
 
+    console.log("Host gameplay: Setting up answer subscription for question:", currentQuestion.id);
     const supabase = createClient();
     
     // Subscribe to new answers for the current question
@@ -109,6 +125,7 @@ export function HostGameplayView({
         },
         async (payload) => {
           const newAnswer = payload.new;
+          console.log("Host gameplay: New answer received:", newAnswer);
           
           try {
             // Update answer distribution
@@ -121,6 +138,9 @@ export function HostGameplayView({
                   ...newDistribution[optionIndex],
                   count: newDistribution[optionIndex].count + 1,
                 };
+                console.log(`Host gameplay: Updated count for option ${newAnswer.option_id} to ${newDistribution[optionIndex].count}`);
+              } else {
+                console.warn(`Host gameplay: Option ${newAnswer.option_id} not found in distribution`);
               }
               
               // Recalculate percentages
@@ -131,7 +151,11 @@ export function HostGameplayView({
               }));
             });
             
-            setAnsweredCount(prev => prev + 1);
+            setAnsweredCount(prev => {
+              const newCount = prev + 1;
+              console.log(`Host gameplay: Updated answer count to ${newCount}`);
+              return newCount;
+            });
           } catch (err) {
             console.error('Error processing new answer:', err);
           }
@@ -140,6 +164,7 @@ export function HostGameplayView({
       .subscribe();
     
     return () => {
+      console.log("Host gameplay: Cleaning up answer subscription");
       supabase.removeChannel(answersSubscription);
     };
   }, [currentQuestion, showingResults]);

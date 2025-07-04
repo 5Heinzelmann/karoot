@@ -64,6 +64,7 @@ export function HostLobbyView({
     }
 
     setIsStarting(true);
+    console.log("Host lobby: Starting game:", game.id);
 
     try {
       const supabase = createClient();
@@ -71,14 +72,23 @@ export function HostLobbyView({
       // Update game status in the database
       const { error } = await supabase
         .from('games')
-        .update({ status: 'in_progress' })
+        .update({
+          status: 'in_progress',
+          current_question_index: 0 // Ensure we start at the first question
+        })
         .eq('id', game.id)
         .eq('host_id', game.host_id);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Host lobby: Error updating game status:", error);
+        throw error;
+      }
       
-      // Redirect to the in-progress game page
-      router.push(`/game/${game.id}/host?status=in_progress`);
+      console.log("Host lobby: Game status updated to in_progress");
+      
+      // Use window.location.href instead of router.push for a full page reload
+      // This ensures all state is reset properly
+      window.location.href = `/game/${game.id}/host?status=in_progress`;
     } catch (err) {
       console.error('Error starting game:', err);
       setIsStarting(false);

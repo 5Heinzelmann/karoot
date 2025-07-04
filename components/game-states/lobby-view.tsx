@@ -60,6 +60,7 @@ export function LobbyView({
   // Listen for game status changes
   useEffect(() => {
     // Subscribe to game status changes
+    console.log("Lobby view: Setting up game status subscription for game:", gameId);
     const gameSubscription = supabase
       .channel('public:games')
       .on('postgres_changes',
@@ -71,10 +72,13 @@ export function LobbyView({
         },
         (payload) => {
           const updatedGame = payload.new;
+          console.log("Lobby view: Game update received:", updatedGame);
           
           // If game status changed to in_progress, refresh the page to load the gameplay view
           if (updatedGame.status === 'in_progress') {
-            window.location.reload();
+            console.log("Lobby view: Game started, reloading page");
+            // Use a more reliable approach than just reload
+            window.location.href = `/game/${gameId}?status=in_progress`;
           }
         }
       )

@@ -106,6 +106,7 @@ export default function HostPage() {
       
       try {
         setIsLoading(true);
+        console.log("Host page: Fetching game data for game:", gameId);
         const supabase = createClient();
         
         // Get game data
@@ -115,7 +116,11 @@ export default function HostPage() {
           .eq('id', gameId)
           .single();
           
-        if (gameError) throw gameError;
+        if (gameError) {
+          console.error("Host page: Error fetching game:", gameError);
+          throw gameError;
+        }
+        console.log("Host page: Game data fetched:", gameData);
         
         // Check if user is the game host
         if (gameData.host_id !== user.id) {
@@ -126,6 +131,7 @@ export default function HostPage() {
         
         // Override status from URL if provided
         const status = searchParams.get('status') || gameData.status;
+        console.log("Game status:", status);
         setGame({ ...gameData, status: status as 'draft' | 'lobby' | 'in_progress' | 'finished' });
         
         // Get participants
@@ -135,6 +141,7 @@ export default function HostPage() {
           .eq('game_id', gameId);
           
         if (participantsError) throw participantsError;
+        console.log("Participants fetched:", participantsData.length);
         
         // Transform participants to include score
         const participantsWithScore = participantsData.map(p => ({
@@ -152,6 +159,7 @@ export default function HostPage() {
           .order('order', { ascending: true });
           
         if (questionsError) throw questionsError;
+        console.log("Questions fetched:", questionsData.length);
         
         setQuestions(questionsData);
         
@@ -170,9 +178,11 @@ export default function HostPage() {
         }
         
         setOptions(optionsRecord);
+        console.log("Options fetched for all questions");
         
         // Fetch answer distributions if game is finished
         if (status === 'finished') {
+          console.log("Fetching answer distributions for finished game");
           const answerDistributionsRecord: Record<string, AnswerDistribution[]> = {};
           
           for (const question of questionsData) {
@@ -211,6 +221,7 @@ export default function HostPage() {
         }
         
         if (status === 'in_progress') {
+          console.log("Game is in progress, setting up timer");
           // Start the timer
           const timer = setInterval(() => {
             setTimeRemaining((prev) => {
@@ -222,6 +233,8 @@ export default function HostPage() {
             });
           }, 1000);
           
+          // Make sure we set loading to false for in_progress status too
+          setIsLoading(false);
           return () => clearInterval(timer);
         }
         
@@ -234,20 +247,69 @@ export default function HostPage() {
     };
     
     fetchGameData();
-  }, [gameId, searchParams, user]);
+    
+    // Set up real-time subscription for game status changes
+    const supabase = createClient();
+    console.log("Host page: Setting up game subscription for game:", gameId);
+    
+    const gameSubscription = supabase
+      .channel('public:games:host')
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`
+        },
+        (payload) => {
+          const updatedGame = payload.new as Game;
+          console.log("Host page: Game update received:", updatedGame);
+          
+          // If game status changed, update our local state
+          if (updatedGame.status !== game.status) {
+            console.log("Host page: Game status changed from", game.status, "to", updatedGame.status);
+            setGame(updatedGame);
+            
+            // If game is now in progress, make sure we're not in loading state
+            if (updatedGame.status === 'in_progress') {
+              console.log("Host page: Game is now in progress, ensuring loading state is false");
+              setIsLoading(false);
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      console.log("Host page: Cleaning up game subscription");
+      supabase.removeChannel(gameSubscription);
+    };
+  }, [gameId, searchParams, user, game.status]);
 
   const handleStartGame = async () => {
     try {
+      console.log("Host page: Starting game:", gameId);
       const supabase = createClient();
       
       // Update game status in the database
-      const { error } = await supabase
+      console.log("Host page: Updating game status to in_progress with current_question_index=0");
+      const { data, error } = await supabase
         .from('games')
-        .update({ status: 'in_progress' })
+        .update({
+          status: 'in_progress',
+          current_question_index: 0 // Ensure we start at the first question
+        })
         .eq('id', gameId)
-        .eq('host_id', user?.id);
+        .eq('host_id', user?.id)
+        .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Host page: Error updating game status:", error);
+        throw error;
+      }
+      
+      console.log("Host page: Game status updated to in_progress:", data);
+      console.log("Host page: Redirecting to in-progress view");
       
       // Redirect to the in-progress view
       window.location.href = `/game/${gameId}/host?status=in_progress`;
@@ -259,24 +321,33 @@ export default function HostPage() {
 
   const handleNextQuestion = async () => {
     try {
+      console.log("Host page: Moving to next question");
       const supabase = createClient();
       
       if (currentQuestionIndex < questions.length - 1) {
         const nextIndex = currentQuestionIndex + 1;
+        console.log("Host page: Current question index:", currentQuestionIndex, "Next index:", nextIndex);
         
         // Update current question index in the database
-        const { error } = await supabase
+        console.log("Host page: Updating current_question_index in database to", nextIndex);
+        const { data, error } = await supabase
           .from('games')
           .update({ current_question_index: nextIndex })
           .eq('id', gameId)
-          .eq('host_id', user?.id);
+          .eq('host_id', user?.id)
+          .select();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Host page: Error updating question index:", error);
+          throw error;
+        }
         
+        console.log("Host page: Question index updated successfully:", data);
         setCurrentQuestionIndex(nextIndex);
         setTimeRemaining(15);
       } else {
         // End the game if we've gone through all questions
+        console.log("Host page: Reached last question, ending game");
         await handleEndGame();
       }
     } catch (err) {
@@ -287,16 +358,25 @@ export default function HostPage() {
 
   const handleEndGame = async () => {
     try {
+      console.log("Host page: Ending game:", gameId);
       const supabase = createClient();
       
       // Update game status in the database
-      const { error } = await supabase
+      console.log("Host page: Updating game status to finished");
+      const { data, error } = await supabase
         .from('games')
         .update({ status: 'finished' })
         .eq('id', gameId)
-        .eq('host_id', user?.id);
+        .eq('host_id', user?.id)
+        .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Host page: Error updating game status to finished:", error);
+        throw error;
+      }
+      
+      console.log("Host page: Game status updated to finished:", data);
+      console.log("Host page: Redirecting to finished view");
       
       // Redirect to the finished view
       window.location.href = `/game/${gameId}/host?status=finished`;
@@ -353,8 +433,35 @@ export default function HostPage() {
         />
       );
     case 'in_progress':
+      console.log("Host page: Rendering in_progress view");
+      console.log("Host page: Current question index:", currentQuestionIndex);
+      console.log("Host page: Total questions:", questions.length);
+      
+      if (currentQuestionIndex >= questions.length) {
+        console.error("Host page: Current question index out of bounds");
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="text-center">
+              <div className="text-error text-4xl mb-4">⚠️</div>
+              <h1 className="text-xl font-bold mb-2">Question Configuration Error</h1>
+              <p className="text-text-muted mb-4">The current question index is out of bounds.</p>
+              <button
+                onClick={handleEndGame}
+                className="px-4 py-2 bg-primary text-white rounded-md"
+              >
+                End Game
+              </button>
+            </div>
+          </div>
+        );
+      }
+      
       const currentQuestion = questions[currentQuestionIndex];
+      console.log("Host page: Current question:", currentQuestion);
+      
       const currentOptions = options[currentQuestion.id];
+      console.log("Host page: Current options:", currentOptions ? currentOptions.length : 0);
+      
       const currentDistribution = answerDistributions[currentQuestion.id];
       
       return (

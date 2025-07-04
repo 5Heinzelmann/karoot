@@ -32,6 +32,8 @@ export function GameplayView({
   useEffect(() => {
     const supabase = createClient();
     
+    console.log("Gameplay view: Setting up game subscription for game:", gameId);
+    
     // Subscribe to game updates (status changes and current question index changes)
     const gameSubscription = supabase
       .channel('public:games')
@@ -44,15 +46,21 @@ export function GameplayView({
         },
         async (payload) => {
           const updatedGame = payload.new as Game;
+          console.log("Gameplay view: Game update received:", updatedGame);
           
           // If game status changed to finished, redirect to results page
           if (updatedGame.status === 'finished') {
+            console.log("Gameplay view: Game finished, redirecting to results");
             window.location.href = `/game/${gameId}?status=finished`;
             return;
           }
           
           // If current question index changed, fetch the new question and options
           if (currentQuestion && updatedGame.current_question_index !== currentQuestion.order - 1) {
+            console.log("Gameplay view: Question index changed, fetching new question");
+            console.log("Current question order:", currentQuestion.order);
+            console.log("New question index:", updatedGame.current_question_index);
+            
             setWaitingForNextQuestion(true);
             
             try {
@@ -64,7 +72,12 @@ export function GameplayView({
                 .eq('order', updatedGame.current_question_index + 1)
                 .single();
               
-              if (questionsError || !questionsData) throw questionsError;
+              if (questionsError || !questionsData) {
+                console.error("Gameplay view: Error fetching new question:", questionsError);
+                throw questionsError;
+              }
+              
+              console.log("Gameplay view: New question fetched:", questionsData);
               
               // Fetch options for the new question
               const { data: optionsData, error: optionsError } = await supabase
@@ -72,10 +85,16 @@ export function GameplayView({
                 .select('*')
                 .eq('question_id', questionsData.id);
               
-              if (optionsError) throw optionsError;
+              if (optionsError) {
+                console.error("Gameplay view: Error fetching options:", optionsError);
+                throw optionsError;
+              }
+              
+              console.log("Gameplay view: Options fetched:", optionsData.length);
               
               // Update state with new question and options
               setTimeout(() => {
+                console.log("Gameplay view: Updating state with new question");
                 setCurrentQuestion(questionsData);
                 setOptions(optionsData);
                 setSelectedOptionId(null);
@@ -85,6 +104,7 @@ export function GameplayView({
               }, 1000);
             } catch (err) {
               console.error('Error fetching new question:', err);
+              setWaitingForNextQuestion(false); // Make sure we exit the waiting state on error
             }
           }
         }
@@ -92,6 +112,7 @@ export function GameplayView({
       .subscribe();
     
     return () => {
+      console.log("Gameplay view: Cleaning up game subscription");
       supabase.removeChannel(gameSubscription);
     };
   }, [gameId, currentQuestion]);

@@ -52,6 +52,7 @@ export default function GamePage() {
   useEffect(() => {
     async function fetchGameData() {
       try {
+        console.log("Participant view: Fetching game data for game:", gameId);
         // Fetch game details
         const { data: gameData, error: gameError } = await supabase
           .from('games')
@@ -60,11 +61,13 @@ export default function GamePage() {
           .single();
         
         if (gameError || !gameData) {
+          console.error("Game not found:", gameError);
           setError('Game not found. Please check the code and try again.');
           setIsLoading(false);
           return;
         }
         
+        console.log("Participant view: Game data fetched:", gameData);
         setGame(gameData);
         
         // Fetch participants
@@ -74,6 +77,7 @@ export default function GamePage() {
           .eq('game_id', gameId);
         
         if (!participantsError && participantsData) {
+          console.log("Participant view: Participants fetched:", participantsData.length);
           // Convert to ParticipantWithScore
           const participantsWithScore = participantsData.map(p => ({
             ...p,
@@ -85,6 +89,7 @@ export default function GamePage() {
         
         // If game is in progress, fetch current question and options
         if (gameData.status === 'in_progress') {
+          console.log("Participant view: Game is in progress, fetching questions");
           const { data: questionsData, error: questionsError } = await supabase
             .from('questions')
             .select('*')
@@ -92,8 +97,19 @@ export default function GamePage() {
             .order('order', { ascending: true });
           
           if (!questionsError && questionsData && questionsData.length > 0) {
+            console.log("Participant view: Questions fetched:", questionsData.length);
             const currentQuestionIndex = gameData.current_question_index;
+            console.log("Participant view: Current question index:", currentQuestionIndex);
+            
+            if (currentQuestionIndex >= questionsData.length) {
+              console.error("Participant view: Current question index out of bounds");
+              setError('Game configuration error. Please contact the host.');
+              setIsLoading(false);
+              return;
+            }
+            
             const currentQuestion = questionsData[currentQuestionIndex];
+            console.log("Participant view: Current question:", currentQuestion);
             setCurrentQuestion(currentQuestion);
             
             // Fetch options for the current question
@@ -103,10 +119,14 @@ export default function GamePage() {
               .eq('question_id', currentQuestion.id);
             
             if (!optionsError && optionsData) {
+              console.log("Participant view: Options fetched:", optionsData.length);
               setCurrentOptions(optionsData);
+            } else {
+              console.error("Participant view: Error fetching options:", optionsError);
             }
             
             // Start the timer
+            console.log("Participant view: Starting timer");
             const timer = setInterval(() => {
               setTimeRemaining((prev) => {
                 if (prev <= 1) {
@@ -117,7 +137,14 @@ export default function GamePage() {
               });
             }, 1000);
             
+            // Make sure we set loading to false for in_progress status too
+            setIsLoading(false);
             return () => clearInterval(timer);
+          } else {
+            console.error("Participant view: Error fetching questions:", questionsError);
+            setError('Failed to load questions. Please try again.');
+            setIsLoading(false);
+            return;
           }
         }
         
