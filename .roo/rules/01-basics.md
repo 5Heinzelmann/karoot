@@ -1,0 +1,13 @@
+- Write all code self-explanatory: Comments in the code are strictly forbidden.
+- Always prefer the most simple and minimal approach with the least code changes.
+- Only create small, simple components with clearly defined individual responsibilities.
+- Adhere to the DRY principle, look for reusable code
+- Use proven solutions and libraries for common issues to increase reliability. No custom solutions for standard problems
+- Verify that existing implementations are fully utilized before introducing new patterns or technologies
+- Ensure clean code organization, reduce file size of lines.
+- Use consistent naming conventions, formatting, and architecture
+- All code must be easily adaptable and extendable to meet future requirements.
+- Security: Ensure all code is secure and free from vulnerabilities.
+- Performance: Analyze the code's performance and optimize it to utilize resources efficiently.
+- Consistent case naming: Ensure file names, methods, and types are consistently named.
+- Ensure all code is type-safe to prevent errors and increase reliability.

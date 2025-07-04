@@ -1,0 +1,2 @@
+- UI/UX: Ensure the user interface is consistent and intuitive, using as many standard components as possible.
+- Colors: Avoid custom color definitions: Use existing color palettes and standards to ensure consistency and maintainability.
