@@ -47,11 +47,10 @@ export function CreateGameForm() {
       const { data, error } = await supabase
         .from('games')
         .select('code')
-        .eq('code', code)
-        .single();
+        .eq('code', code);
       
-      // If no data is returned, the code is unique
-      isUnique = !data && !error;
+      // If no data is returned or empty array, the code is unique
+      isUnique = !error && (!data || data.length === 0);
     }
     
     return code;
