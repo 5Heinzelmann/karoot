@@ -33,6 +33,10 @@ export default function GamePage() {
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  // These hooks were previously inside the 'finished' case
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [isLoadingResults, setIsLoadingResults] = useState(true);
 
   // Initialize participant data from sessionStorage
   useEffect(() => {
@@ -196,8 +200,14 @@ export default function GamePage() {
           if (updatedGame.status !== game?.status ||
               updatedGame.current_question_index !== game?.current_question_index) {
             
+            // If game status changed to finished, reset results loading state
+            if (updatedGame.status === 'finished') {
+              setIsLoadingResults(true);
+              setCorrectAnswers(0);
+              setTotalQuestions(0);
+            }
             // If game status changed to in_progress, fetch the current question
-            if (updatedGame.status === 'in_progress') {
+            else if (updatedGame.status === 'in_progress') {
               try {
                 // Fetch current question
                 const { data: questionsData, error: questionsError } = await supabase
@@ -366,10 +376,6 @@ export default function GamePage() {
       );
     case 'finished':
       // Fetch participant's answers and calculate score
-      const [correctAnswers, setCorrectAnswers] = useState(0);
-      const [totalQuestions, setTotalQuestions] = useState(0);
-      const [isLoadingResults, setIsLoadingResults] = useState(true);
-      
       useEffect(() => {
         async function fetchResults() {
           if (!participantId || !game) return;

@@ -37,6 +37,9 @@ export function Timer({
     return theme.colors.error;
   };
 
+  // Store whether onComplete has been called
+  const [completedCalled, setCompletedCalled] = useState(false);
+  
   useEffect(() => {
     if (!isRunning) return;
     
@@ -45,7 +48,8 @@ export function Timer({
         if (prev <= 1) {
           clearInterval(timer);
           setIsRunning(false);
-          onComplete?.();
+          // Instead of calling onComplete directly, mark it to be called
+          setCompletedCalled(true);
           return 0;
         }
         return prev - 1;
@@ -53,7 +57,16 @@ export function Timer({
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [isRunning, onComplete]);
+  }, [isRunning]);
+  
+  // Separate effect to handle completion callback
+  useEffect(() => {
+    if (completedCalled && onComplete) {
+      // Call onComplete in a separate effect to avoid render-phase updates
+      onComplete();
+      setCompletedCalled(false);
+    }
+  }, [completedCalled, onComplete]);
 
   return (
     <div className={`relative ${className}`}>
