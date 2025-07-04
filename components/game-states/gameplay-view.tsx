@@ -64,17 +64,34 @@ export function GameplayView({
             setWaitingForNextQuestion(true);
             
             try {
-              // Fetch the new question
-              const { data: questionsData, error: questionsError } = await supabase
+              console.log("Gameplay view: Fetching question with index:", updatedGame.current_question_index);
+              
+              // First try to fetch by order (index + 1)
+              let { data: questionsData, error: questionsError } = await supabase
                 .from('questions')
                 .select('*')
                 .eq('game_id', gameId)
                 .eq('order', updatedGame.current_question_index + 1)
                 .single();
               
+              // If that fails, try fetching by direct index as a fallback
               if (questionsError || !questionsData) {
-                console.error("Gameplay view: Error fetching new question:", questionsError);
-                throw questionsError;
+                console.log("Gameplay view: Failed to fetch by order, trying direct index");
+                const { data: fallbackData, error: fallbackError } = await supabase
+                  .from('questions')
+                  .select('*')
+                  .eq('game_id', gameId)
+                  .order('order', { ascending: true })
+                  .range(updatedGame.current_question_index, updatedGame.current_question_index)
+                  .single();
+                  
+                if (fallbackError || !fallbackData) {
+                  console.error("Gameplay view: Error fetching new question:", questionsError);
+                  console.error("Gameplay view: Fallback also failed:", fallbackError);
+                  throw fallbackError || questionsError;
+                }
+                
+                questionsData = fallbackData;
               }
               
               console.log("Gameplay view: New question fetched:", questionsData);
@@ -103,7 +120,10 @@ export function GameplayView({
                 setQuestionStartTime(Date.now()); // Reset the timer for the new question
               }, 1000);
             } catch (err) {
-              console.error('Error fetching new question:', err);
+              console.error('Error fetching new question:', JSON.stringify(err));
+              console.error('Game ID:', gameId);
+              console.error('Current question index:', updatedGame.current_question_index);
+              console.error('Attempted to fetch question with order:', updatedGame.current_question_index + 1);
               setWaitingForNextQuestion(false); // Make sure we exit the waiting state on error
             }
           }

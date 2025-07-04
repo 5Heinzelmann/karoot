@@ -212,7 +212,14 @@ export function HostGameplayView({
       if (updateError) throw updateError;
       
       // Fetch the next question
-      const { data: questionData, error: questionError } = await supabase
+      console.log("Host gameplay: Fetching next question with index:", nextQuestionIndex);
+      
+      // Use let instead of const so we can reassign if needed
+      let questionData;
+      let questionError;
+      
+      // First attempt - using range query
+      const questionResult = await supabase
         .from('questions')
         .select('*')
         .eq('game_id', game.id)
@@ -220,7 +227,30 @@ export function HostGameplayView({
         .range(nextQuestionIndex, nextQuestionIndex)
         .single();
       
-      if (questionError || !questionData) throw questionError;
+      questionData = questionResult.data;
+      questionError = questionResult.error;
+      
+      if (questionError || !questionData) {
+        console.error("Host gameplay: Error fetching next question:", questionError);
+        console.error("Host gameplay: Question data:", questionData);
+        
+        // Try alternative approach - fetch by order
+        console.log("Host gameplay: Trying to fetch by order instead");
+        const altQuestionResult = await supabase
+          .from('questions')
+          .select('*')
+          .eq('game_id', game.id)
+          .eq('order', nextQuestionIndex + 1)
+          .single();
+          
+        if (altQuestionResult.error || !altQuestionResult.data) {
+          console.error("Host gameplay: Alternative approach also failed:", altQuestionResult.error);
+          throw questionError || new Error("Failed to fetch next question");
+        }
+        
+        console.log("Host gameplay: Successfully fetched question by order");
+        questionData = altQuestionResult.data;
+      }
       
       // Fetch options for the next question
       const { data: optionsData, error: optionsError } = await supabase
@@ -238,7 +268,10 @@ export function HostGameplayView({
       setShowingResults(false);
       setIsLoading(false);
     } catch (err) {
-      console.error('Error moving to next question:', err);
+      console.error('Error moving to next question:', JSON.stringify(err));
+      console.error('Game ID:', game.id);
+      // We can't reference nextQuestionIndex here as it might not be defined if the error occurred earlier
+      console.error('Attempted to move to next question after current index:', game.current_question_index);
       setIsLoading(false);
     }
   };
