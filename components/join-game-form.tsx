@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { CarrotIcon } from '@/components/ui/carrot-icon';
-import { theme } from '@/lib/theme';
-import { createClient } from '@/lib/supabase/client';
-import { GameStatus } from '@/lib/types';
+import React, {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {Input} from '@/components/ui/input';
+import {Button} from '@/components/ui/button';
+import {CarrotIcon} from '@/components/ui/carrot-icon';
+import {theme} from '@/lib/theme';
+import {createClient} from '@/lib/supabase/client';
 
 export function JoinGameForm() {
   const router = useRouter();
@@ -65,7 +64,7 @@ export function JoinGameForm() {
       }
       
       // Check if the nickname is already taken in this game
-      const { data: existingParticipant, error: participantError } = await supabase
+      const { data: existingParticipant } = await supabase
         .from('participants')
         .select('id')
         .eq('game_id', gameData.id)

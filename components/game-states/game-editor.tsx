@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Game, Question, Option } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
 import { createClient } from '@/lib/supabase/client';
 
@@ -43,7 +42,8 @@ export function GameEditor({
     if (initialQuestions.length === 0) {
       fetchQuestionsAndOptions();
     }
-  }, [game.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.id, game.status, initialQuestions.length, router]);
 
   const fetchQuestionsAndOptions = async () => {
     setIsLoading(true);
@@ -321,7 +321,8 @@ export function GameEditor({
       }
       
       // Remove options for the deleted question
-      const { [questionId]: _, ...remainingOptions } = options;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [questionId]: ignored, ...remainingOptions } = options;
       
       // Update state
       setQuestions(updatedQuestions);

@@ -153,7 +153,7 @@ export function CreateGameForm() {
       </form>
       
       <div className="mt-4 text-center text-sm text-text-muted">
-        <p>You'll be able to add questions after creating the game</p>
+        <p>You&apos;ll be able to add questions after creating the game</p>
       </div>
     </div>
   );

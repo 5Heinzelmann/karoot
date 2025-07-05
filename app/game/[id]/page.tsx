@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Game, Participant, Question, Option, Answer } from '@/lib/types';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { Game, Participant, Question, Option } from '@/lib/types';
 import { LobbyView } from '@/components/game-states/lobby-view';
 import { GameplayView } from '@/components/game-states/gameplay-view';
 import { ResultsView } from '@/components/game-states/results-view';
@@ -17,8 +18,6 @@ interface ParticipantWithScore extends Participant {
 
 export default function GamePage() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const gameId = params.id as string;
   const supabase = createClient();
   
@@ -28,9 +27,6 @@ export default function GamePage() {
   const [currentOptions, setCurrentOptions] = useState<Option[]>([]);
   const [participantName, setParticipantName] = useState<string>('');
   const [participantId, setParticipantId] = useState<string | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(15);
-  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   // These hooks were previously inside the 'finished' case
@@ -49,7 +45,7 @@ export default function GamePage() {
         const { data: questionsData, error: questionsError } = await supabase
           .from('questions')
           .select('id')
-          .eq('game_id', game.id);
+          .eq('game_id', game!.id);
           
         if (questionsError) throw questionsError;
         
@@ -168,21 +164,9 @@ export default function GamePage() {
               console.error("Participant view: Error fetching options:", optionsError);
             }
             
-            // Start the timer
-            console.log("Participant view: Starting timer");
-            const timer = setInterval(() => {
-              setTimeRemaining((prev) => {
-                if (prev <= 1) {
-                  clearInterval(timer);
-                  return 0;
-                }
-                return prev - 1;
-              });
-            }, 1000);
-            
             // Make sure we set loading to false for in_progress status too
             setIsLoading(false);
-            return () => clearInterval(timer);
+            return () => {};
           } else {
             console.error("Participant view: Error fetching questions:", questionsError);
             setError('Failed to load questions. Please try again.');
@@ -259,9 +243,6 @@ export default function GamePage() {
                   const currentQuestionIndex = updatedGame.current_question_index;
                   const currentQuestion = questionsData[currentQuestionIndex];
                   setCurrentQuestion(currentQuestion);
-                  setIsAnswerSubmitted(false);
-                  setSelectedOption(null);
-                  setTimeRemaining(15);
                   
                   // Fetch options for the current question
                   const { data: optionsData, error: optionsError } = await supabase
@@ -286,66 +267,7 @@ export default function GamePage() {
       supabase.removeChannel(participantsSubscription);
       supabase.removeChannel(gameSubscription);
     };
-  }, [gameId, supabase]);
-
-  const handleSubmitAnswer = async (optionId: string) => {
-    if (isAnswerSubmitted || !currentQuestion || !participantId) return;
-    
-    try {
-      setSelectedOption(optionId);
-      setIsAnswerSubmitted(true);
-      
-      // Check if the answer is correct
-      const isCorrect = currentOptions.find(o => o.id === optionId)?.is_correct || false;
-      
-      // Calculate score based on time remaining
-      const score = isCorrect ? timeRemaining * 100 : 0;
-      
-      // Record the answer in the database
-      const { error: answerError } = await supabase
-        .from('answers')
-        .insert([{
-          participant_id: participantId,
-          question_id: currentQuestion.id,
-          option_id: optionId,
-          response_time_ms: (15 - timeRemaining) * 1000, // Convert seconds to milliseconds
-          score: score // Store the score with the answer
-        }]);
-      
-      if (answerError) {
-        console.error('Error recording answer:', answerError);
-      }
-      
-      // Update participant score in the database
-      const { data: currentParticipant, error: participantError } = await supabase
-        .from('participants')
-        .select('score')
-        .eq('id', participantId)
-        .single();
-        
-      if (!participantError && currentParticipant) {
-        const currentScore = currentParticipant.score || 0;
-        const newScore = currentScore + score;
-        
-        const { error: updateError } = await supabase
-          .from('participants')
-          .update({ score: newScore })
-          .eq('id', participantId);
-          
-        if (updateError) {
-          console.error('Error updating participant score:', updateError);
-        }
-      }
-      
-      // Update participant score locally
-      setParticipants(participants.map(p =>
-        p.id === participantId ? { ...p, score: (p.score || 0) + score } : p
-      ));
-    } catch (err) {
-      console.error('Error submitting answer:', err);
-      setError('Failed to submit your answer. Please try again.');
-    }
-  };
+  }, [gameId, supabase, game?.current_question_index, game?.status]);
 
   if (isLoading) {
     return (
@@ -382,13 +304,13 @@ export default function GamePage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <h1 className="text-xl font-bold mb-2">Game Not Found</h1>
-          <p className="text-text-muted mb-4">The game you're looking for doesn't exist.</p>
-          <a
+          <p className="text-text-muted mb-4">The game you&apos;re looking for doesn&apos;t exist.</p>
+          <Link
             href="/"
             className="px-4 py-2 bg-primary text-white rounded-md inline-block"
           >
             Back to Home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -429,7 +351,6 @@ export default function GamePage() {
       
       return (
         <ResultsView
-          gameId={game.id}
           nickname={participantName}
           correctAnswers={correctAnswers}
           totalQuestions={totalQuestions}
@@ -441,12 +362,12 @@ export default function GamePage() {
           <div className="text-center">
             <h1 className="text-xl font-bold mb-2">Game Not Available</h1>
             <p className="text-text-muted mb-4">This game is not currently active.</p>
-            <a
+            <Link
               href="/"
               className="px-4 py-2 bg-primary text-white rounded-md inline-block"
             >
               Back to Home
-            </a>
+            </Link>
           </div>
         </div>
       );

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Game, Participant, Question, Option, AnswerDistribution } from '@/lib/types';
 import { HostLobbyView } from '@/components/game-states/host-lobby-view';
 import { HostGameplayView } from '@/components/game-states/host-gameplay-view';
@@ -95,6 +96,7 @@ export default function HostPage() {
   const [options, setOptions] = useState<Record<string, Option[]>>(mockOptions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [answerDistributions, setAnswerDistributions] = useState<Record<string, AnswerDistribution[]>>(mockAnswerDistributions);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [timeRemaining, setTimeRemaining] = useState<number>(15);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -286,6 +288,7 @@ export default function HostPage() {
     };
   }, [gameId, searchParams, user, game.status]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleStartGame = async () => {
     try {
       console.log("Host page: Starting game:", gameId);
@@ -319,6 +322,7 @@ export default function HostPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNextQuestion = async () => {
     try {
       console.log("Host page: Moving to next question");
@@ -462,8 +466,6 @@ export default function HostPage() {
       const currentOptions = options[currentQuestion.id];
       console.log("Host page: Current options:", currentOptions ? currentOptions.length : 0);
       
-      const currentDistribution = answerDistributions[currentQuestion.id];
-      
       return (
         <HostGameplayView
           game={game}
@@ -474,7 +476,7 @@ export default function HostPage() {
       );
     case 'finished':
       // Create question summaries from our data
-      const questionSummaries = questions.map((question, index) => {
+      const questionSummaries = questions.map((question) => {
         const distribution = answerDistributions[question.id] || [];
         const totalAnswers = distribution.reduce((sum, item) => sum + item.count, 0);
         const correctOption = distribution.find(item => item.is_correct);
@@ -503,12 +505,12 @@ export default function HostPage() {
           <div className="text-center">
             <h1 className="text-xl font-bold mb-2">Game Not Available</h1>
             <p className="text-text-muted mb-4">This game is not currently active.</p>
-            <a 
+            <Link
               href="/"
               className="px-4 py-2 bg-primary text-white rounded-md inline-block"
             >
               Back to Home
-            </a>
+            </Link>
           </div>
         </div>
       );

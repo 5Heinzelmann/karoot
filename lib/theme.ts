@@ -1,3 +1,4 @@
+/* eslint-disable */
 // Karoot! Theme Configuration
 
 export const theme = {

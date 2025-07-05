@@ -1,11 +1,9 @@
 "use client";
 
 import { useRequireAuth } from "@/lib/auth/use-require-auth";
-import { useRouter } from "next/navigation";
 
 export function AuthCheck({ children }: { children: React.ReactNode }) {
   const { isLoading } = useRequireAuth();
-  const router = useRouter();
 
   if (isLoading) {
     return (

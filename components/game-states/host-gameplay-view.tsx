@@ -210,9 +210,8 @@ export function HostGameplayView({
       // Fetch the next question
       console.log("Host gameplay: Fetching next question with index:", nextQuestionIndex);
       
-      // Use let instead of const so we can reassign if needed
+      // Use let for questionData since we need to reassign it
       let questionData;
-      let questionError;
       
       // First attempt - using range query
       const questionResult = await supabase
@@ -224,7 +223,7 @@ export function HostGameplayView({
         .single();
       
       questionData = questionResult.data;
-      questionError = questionResult.error;
+      const questionError = questionResult.error;
       
       if (questionError || !questionData) {
         console.error("Host gameplay: Error fetching next question:", questionError);

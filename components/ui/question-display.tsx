@@ -19,7 +19,6 @@ export function QuestionDisplay({
   question,
   options,
   onAnswer,
-  showTimer = false,
   showCorrectAnswer = false,
   selectedOptionId,
   disabled = false,

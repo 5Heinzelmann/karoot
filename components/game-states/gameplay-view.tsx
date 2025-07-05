@@ -67,7 +67,9 @@ export function GameplayView({
               console.log("Gameplay view: Fetching question with index:", updatedGame.current_question_index);
               
               // First try to fetch by order (index + 1)
-              let { data: questionsData, error: questionsError } = await supabase
+              let questionData;
+              
+              const { data: questionsData, error: questionsError } = await supabase
                 .from('questions')
                 .select('*')
                 .eq('game_id', gameId)
@@ -91,16 +93,18 @@ export function GameplayView({
                   throw fallbackError || questionsError;
                 }
                 
-                questionsData = fallbackData;
+                questionData = fallbackData;
+              } else {
+                questionData = questionsData;
               }
               
-              console.log("Gameplay view: New question fetched:", questionsData);
+              console.log("Gameplay view: New question fetched:", questionData);
               
               // Fetch options for the new question
               const { data: optionsData, error: optionsError } = await supabase
                 .from('options')
                 .select('*')
-                .eq('question_id', questionsData.id);
+                .eq('question_id', questionData.id);
               
               if (optionsError) {
                 console.error("Gameplay view: Error fetching options:", optionsError);
@@ -112,7 +116,7 @@ export function GameplayView({
               // Update state with new question and options
               setTimeout(() => {
                 console.log("Gameplay view: Updating state with new question");
-                setCurrentQuestion(questionsData);
+                setCurrentQuestion(questionData);
                 setOptions(optionsData);
                 setSelectedOptionId(null);
                 setShowFeedback(false);

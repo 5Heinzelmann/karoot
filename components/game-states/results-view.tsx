@@ -7,14 +7,12 @@ import { CarrotIcon } from '@/components/ui/carrot-icon';
 import { theme } from '@/lib/theme';
 
 interface ResultsViewProps {
-  gameId: string;
   nickname: string;
   correctAnswers?: number;
   totalQuestions?: number;
 }
 
 export function ResultsView({
-  gameId,
   nickname,
   correctAnswers = 0,
   totalQuestions = 0,

@@ -21,7 +21,6 @@ export function LobbyView({
   initialParticipants = [],
 }: LobbyViewProps) {
   const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
-  const [isWaiting, setIsWaiting] = useState(true);
   const supabase = createClient();
 
   // Use Supabase realtime subscriptions to listen for new participants
