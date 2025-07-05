@@ -24,7 +24,7 @@
 
 #### 1.4 Quiz Gameplay
 - Questions displayed in a 2x2 grid layout
-- 15-second countdown timer for each question
+- Host controls when to close questions and reveal answers
 - Players select answers and receive feedback
 - Host sees answer distribution and controls progression
 
@@ -83,7 +83,6 @@
 
 3. **In Progress**
     - Active gameplay with questions and answers
-    - Timer countdown for each question
 
 4. **Finished**
     - Game has ended
@@ -126,7 +125,7 @@
 #### 5.2 Player Flow
 1. Player enters the 4-digit game code and unique nickname
 2. Player waits in lobby until host starts the game
-3. Player answers each question within the 15-second time limit
+3. Player answers each question when it's active
 4. After each question, player sees correct answer and their selection
 5. At game end, player sees completion screen
 

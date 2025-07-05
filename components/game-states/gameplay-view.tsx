@@ -222,18 +222,7 @@ export function GameplayView({
           showCorrectAnswer={showFeedback}
           selectedOptionId={selectedOptionId || undefined}
           disabled={!!selectedOptionId}
-          showTimer={true}
-          timerDuration={15}
-          onTimerComplete={() => {
-            if (!selectedOptionId) {
-              // If the player hasn't answered when the timer completes,
-              // we'll submit a "timed out" answer with a random option
-              const randomOptionId = options.length > 0 ? options[0].id : null;
-              if (randomOptionId) {
-                handleAnswer(randomOptionId);
-              }
-            }
-          }}
+          showTimer={false}
         />
       </div>
 

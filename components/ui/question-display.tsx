@@ -3,15 +3,12 @@
 import React, { useState } from 'react';
 import { Question, Option } from '@/lib/types';
 import { theme } from '@/lib/theme';
-import { Timer } from './timer';
 
 interface QuestionDisplayProps {
   question: Question;
   options: Option[];
   onAnswer?: (optionId: string) => void;
   showTimer?: boolean;
-  timerDuration?: number;
-  onTimerComplete?: () => void;
   showCorrectAnswer?: boolean;
   selectedOptionId?: string;
   disabled?: boolean;
@@ -22,9 +19,7 @@ export function QuestionDisplay({
   question,
   options,
   onAnswer,
-  showTimer = true,
-  timerDuration = 15,
-  onTimerComplete,
+  showTimer = false,
   showCorrectAnswer = false,
   selectedOptionId,
   disabled = false,
@@ -86,15 +81,6 @@ export function QuestionDisplay({
     <div className={`w-full ${className}`}>
       <div className="flex justify-between items-start mb-6">
         <h2 className="text-xl font-bold flex-1">{question.text}</h2>
-        {showTimer && (
-          <div className="ml-4">
-            <Timer 
-              duration={timerDuration} 
-              onComplete={onTimerComplete}
-              size="md"
-            />
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

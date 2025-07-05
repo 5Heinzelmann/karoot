@@ -6,7 +6,6 @@ import { Game, Question, Option, AnswerDistribution } from '@/lib/types';
 import { QuestionDisplay } from '@/components/ui/question-display';
 import { AnswerDistribution as AnswerDistributionComponent } from '@/components/ui/answer-distribution';
 import { Button } from '@/components/ui/button';
-import { Timer } from '@/components/ui/timer';
 import { theme } from '@/lib/theme';
 import { createClient } from '@/lib/supabase/client';
 
@@ -169,9 +168,6 @@ export function HostGameplayView({
     };
   }, [currentQuestion, showingResults]);
 
-  const handleTimerComplete = () => {
-    setShowingResults(true);
-  };
 
   const handleNextQuestion = async () => {
     setIsLoading(true);
@@ -325,16 +321,6 @@ export function HostGameplayView({
             showTimer={false}
             showCorrectAnswer={showingResults}
           />
-          
-          {!showingResults && (
-            <div className="mt-6 flex justify-center">
-              <Timer 
-                duration={15} 
-                onComplete={handleTimerComplete}
-                size="lg"
-              />
-            </div>
-          )}
         </div>
 
         <div>
@@ -386,14 +372,14 @@ export function HostGameplayView({
                 )
               ) : (
                 <Button
-                  onClick={handleTimerComplete}
+                  onClick={() => setShowingResults(true)}
                   className="w-full py-3"
-                  style={{ 
+                  style={{
                     backgroundColor: theme.colors.earth.DEFAULT,
                     color: 'white'
                   }}
                 >
-                  Skip Timer
+                  Close Question
                 </Button>
               )}
               
