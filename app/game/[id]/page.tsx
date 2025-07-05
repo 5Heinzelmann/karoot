@@ -38,6 +38,45 @@ export default function GamePage() {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [isLoadingResults, setIsLoadingResults] = useState(true);
 
+  // Fetch results when game is finished
+  useEffect(() => {
+    if (game?.status !== 'finished' || !participantId || !game) return;
+    
+    async function fetchResults() {
+      try {
+        setIsLoadingResults(true);
+        // Get all questions for this game
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('questions')
+          .select('id')
+          .eq('game_id', game.id);
+          
+        if (questionsError) throw questionsError;
+        
+        setTotalQuestions(questionsData.length);
+        
+        // Get participant's answers
+        const { data: answersData, error: answersError } = await supabase
+          .from('answers')
+          .select('*, options(is_correct)')
+          .eq('participant_id', participantId);
+          
+        if (answersError) throw answersError;
+        
+        // Count correct answers
+        const correct = answersData.filter(answer => answer.options.is_correct).length;
+        setCorrectAnswers(correct);
+        
+        setIsLoadingResults(false);
+      } catch (err) {
+        console.error('Error fetching results:', err);
+        setIsLoadingResults(false);
+      }
+    }
+    
+    fetchResults();
+  }, [game, participantId, supabase]);
+
   // Initialize participant data from sessionStorage
   useEffect(() => {
     const storedName = sessionStorage.getItem('nickname');
@@ -375,43 +414,7 @@ export default function GamePage() {
         />
       );
     case 'finished':
-      // Fetch participant's answers and calculate score
-      useEffect(() => {
-        async function fetchResults() {
-          if (!participantId || !game) return;
-          
-          try {
-            // Get all questions for this game
-            const { data: questionsData, error: questionsError } = await supabase
-              .from('questions')
-              .select('id')
-              .eq('game_id', game.id);
-              
-            if (questionsError) throw questionsError;
-            
-            setTotalQuestions(questionsData.length);
-            
-            // Get participant's answers
-            const { data: answersData, error: answersError } = await supabase
-              .from('answers')
-              .select('*, options(is_correct)')
-              .eq('participant_id', participantId);
-              
-            if (answersError) throw answersError;
-            
-            // Count correct answers
-            const correct = answersData.filter(answer => answer.options.is_correct).length;
-            setCorrectAnswers(correct);
-            
-            setIsLoadingResults(false);
-          } catch (err) {
-            console.error('Error fetching results:', err);
-            setIsLoadingResults(false);
-          }
-        }
-        
-        fetchResults();
-      }, [game.id, participantId, supabase]);
+      // Results are fetched in the top-level useEffect
       
       if (isLoadingResults) {
         return (
