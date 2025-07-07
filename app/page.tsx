@@ -7,7 +7,7 @@ import { theme } from '@/lib/theme';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+    <div className="min-h-[calc(100vh-73px)] flex flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-2">

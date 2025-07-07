@@ -1,3 +1,5 @@
 - "close question" has to disable answer functionality
 - Als Teilnehmer möchte ich nach Beantworten einer Frage nicht sofort sehen, ob ich richtig oder falsch lag - erst wenn vom Host die Frage zu "question closed" wechselt. 
 - Beim Hinzufügen einer Frage als Host möchte ich im selben Schritt auch die 4 Optionen bearbeiten können. 
+- Auth Header
+- after login: list games i've created.
