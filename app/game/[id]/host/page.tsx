@@ -96,8 +96,6 @@ export default function HostPage() {
   const [options, setOptions] = useState<Record<string, Option[]>>(mockOptions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [answerDistributions, setAnswerDistributions] = useState<Record<string, AnswerDistribution[]>>(mockAnswerDistributions);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [timeRemaining, setTimeRemaining] = useState<number>(15);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -223,21 +221,9 @@ export default function HostPage() {
         }
         
         if (status === 'in_progress') {
-          console.log("Game is in progress, setting up timer");
-          // Start the timer
-          const timer = setInterval(() => {
-            setTimeRemaining((prev) => {
-              if (prev <= 1) {
-                clearInterval(timer);
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-          
+          console.log("Game is in progress");
           // Make sure we set loading to false for in_progress status too
           setIsLoading(false);
-          return () => clearInterval(timer);
         }
         
         setIsLoading(false);
@@ -348,7 +334,6 @@ export default function HostPage() {
         
         console.log("Host page: Question index updated successfully:", data);
         setCurrentQuestionIndex(nextIndex);
-        setTimeRemaining(15);
       } else {
         // End the game if we've gone through all questions
         console.log("Host page: Reached last question, ending game");

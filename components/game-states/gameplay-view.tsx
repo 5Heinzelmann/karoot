@@ -26,7 +26,6 @@ export function GameplayView({
   const [showFeedback, setShowFeedback] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState(false);
   const [waitingForNextQuestion, setWaitingForNextQuestion] = useState(false);
-  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
 
   // Use Supabase realtime subscriptions to listen for game updates and new questions
   useEffect(() => {
@@ -121,7 +120,7 @@ export function GameplayView({
                 setSelectedOptionId(null);
                 setShowFeedback(false);
                 setWaitingForNextQuestion(false);
-                setQuestionStartTime(Date.now()); // Reset the timer for the new question
+                // Timer code removed
               }, 1000);
             } catch (err) {
               console.error('Error fetching new question:', JSON.stringify(err));
@@ -151,9 +150,6 @@ export function GameplayView({
       const selectedOption = options.find(option => option.id === optionId);
       const isCorrect = selectedOption?.is_correct || false;
       
-      // Calculate actual response time in milliseconds
-      const responseTimeMs = Date.now() - questionStartTime;
-      
       // Submit the answer to Supabase
       const { error: answerError } = await supabase
         .from('answers')
@@ -161,7 +157,7 @@ export function GameplayView({
           participant_id: participantId,
           question_id: currentQuestion?.id,
           option_id: optionId,
-          response_time_ms: responseTimeMs
+          response_time_ms: 0 // Response time tracking removed
         });
       
       if (answerError) {
@@ -226,7 +222,6 @@ export function GameplayView({
           showCorrectAnswer={showFeedback}
           selectedOptionId={selectedOptionId || undefined}
           disabled={!!selectedOptionId}
-          showTimer={false}
         />
       </div>
 

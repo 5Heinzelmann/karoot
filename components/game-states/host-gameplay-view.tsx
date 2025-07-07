@@ -317,7 +317,6 @@ export function HostGameplayView({
           <QuestionDisplay
             question={currentQuestion}
             options={options}
-            showTimer={false}
             showCorrectAnswer={showingResults}
           />
         </div>

@@ -8,7 +8,6 @@ interface QuestionDisplayProps {
   question: Question;
   options: Option[];
   onAnswer?: (optionId: string) => void;
-  showTimer?: boolean;
   showCorrectAnswer?: boolean;
   selectedOptionId?: string;
   disabled?: boolean;
