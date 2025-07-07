@@ -3,6 +3,8 @@ import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AuthButton } from "@/components/auth-button";
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -21,11 +23,16 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} antialiased`}>
@@ -38,7 +45,18 @@ export default function RootLayout({
           <AuthProvider>
             <header className="w-full p-4 border-b">
               <div className="container mx-auto flex justify-between items-center">
-                <div className="text-xl font-bold text-primary">Karoot!</div>
+                <div className="flex items-center gap-6">
+                  <Link href="/" className="text-xl font-bold text-primary">
+                    Karoot!
+                  </Link>
+                  {user && (
+                    <nav className="flex gap-4">
+                      <Link href="/protected" className="text-sm hover:underline">
+                        My Games
+                      </Link>
+                    </nav>
+                  )}
+                </div>
                 <AuthButton />
               </div>
             </header>
