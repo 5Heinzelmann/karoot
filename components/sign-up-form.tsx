@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QuizMasterCarrot } from "@/components/illustrations/carrot-characters/quiz-master-carrot";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -58,16 +59,21 @@ export function SignUpForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+      <Card className="border-carrot-pale shadow-carrot-lg">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <QuizMasterCarrot size={50} />
+          </div>
+          <CardTitle className="text-3xl font-heading text-carrot">Join the Garden!</CardTitle>
+          <CardDescription className="font-ui text-soil">
+            Plant your seeds of knowledge with a new account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="font-ui font-medium text-soil">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -75,40 +81,57 @@ export function SignUpForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="font-body border-carrot-light focus:border-carrot focus:ring-carrot/20"
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
+                <Label htmlFor="password" className="font-ui font-medium text-soil">Password</Label>
                 <Input
                   id="password"
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="font-body border-carrot-light focus:border-carrot focus:ring-carrot/20"
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
+                <Label htmlFor="repeat-password" className="font-ui font-medium text-soil">Repeat Password</Label>
                 <Input
                   id="repeat-password"
                   type="password"
                   required
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
+                  className="font-body border-carrot-light focus:border-carrot focus:ring-carrot/20"
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
+              {error && (
+                <div className="p-3 rounded-lg bg-feedback-error/10 border border-feedback-error/20 text-feedback-error text-sm font-ui">
+                  {error}
+                </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full py-3 bg-leaf hover:bg-leaf-dark text-white font-ui font-semibold rounded-lg shadow-leaf transition-all duration-200 hover:shadow-lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating an account...
+                  </span>
+                ) : (
+                  "Sign up"
+                )}
               </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-6 text-center text-sm font-ui text-soil">
               Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
+              <Link
+                href="/auth/login"
+                className="text-carrot hover:text-carrot-dark underline-offset-4 hover:underline transition-colors font-medium"
+              >
                 Login
               </Link>
             </div>

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StudentCarrot } from "@/components/illustrations/carrot-characters/student-carrot";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -49,18 +50,21 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
+      <Card className="border-carrot-pale shadow-carrot-lg">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <StudentCarrot size={50} />
+          </div>
+          <CardTitle className="text-3xl font-heading text-carrot">Welcome Back!</CardTitle>
+          <CardDescription className="font-ui text-soil">
+            Enter your credentials to access your carrot garden
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="font-ui font-medium text-soil">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -68,14 +72,15 @@ export function LoginForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="font-body border-carrot-light focus:border-carrot focus:ring-carrot/20"
                 />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="font-ui font-medium text-soil">Password</Label>
                   <Link
                     href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    className="ml-auto inline-block text-sm font-ui text-carrot hover:text-carrot-dark underline-offset-4 hover:underline transition-colors"
                   >
                     Forgot your password?
                   </Link>
@@ -86,18 +91,34 @@ export function LoginForm({
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="font-body border-carrot-light focus:border-carrot focus:ring-carrot/20"
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
+              {error && (
+                <div className="p-3 rounded-lg bg-feedback-error/10 border border-feedback-error/20 text-feedback-error text-sm font-ui">
+                  {error}
+                </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full py-3 bg-carrot hover:bg-carrot-dark text-white font-ui font-semibold rounded-lg shadow-carrot transition-all duration-200 hover:shadow-lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Logging in...
+                  </span>
+                ) : (
+                  "Login"
+                )}
               </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-6 text-center text-sm font-ui text-soil">
               Don&apos;t have an account?{" "}
               <Link
                 href="/auth/sign-up"
-                className="underline underline-offset-4"
+                className="text-carrot hover:text-carrot-dark underline-offset-4 hover:underline transition-colors font-medium"
               >
                 Sign up
               </Link>

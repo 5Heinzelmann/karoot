@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { Question, Option, Game } from '@/lib/types';
 import { QuestionDisplay } from '@/components/ui/question-display';
-import { CarrotIcon } from '@/components/ui/carrot-icon';
+import { ThinkingCarrot, StudentCarrot } from '@/components/illustrations';
+import { FadeIn, SlideUp, Bounce, Pop, StaggerContainer, StaggerItem } from '@/components/animations';
+import { CarrotPattern, CarrotLoader, CarrotProgress } from '@/components/illustrations';
+import { Card } from '@/components/ui/card';
 import { theme } from '@/lib/theme';
 import { createClient } from '@/lib/supabase/client';
 
@@ -177,66 +180,118 @@ export function GameplayView({
 
   if (!currentQuestion) {
     return (
-      <div className="w-full max-w-lg mx-auto p-4 text-center">
-        <div className="animate-spin mb-4">
-          <CarrotIcon size={48} />
-        </div>
-        <p>Loading question...</p>
+      <div className="w-full max-w-lg mx-auto p-4 text-center relative">
+        <CarrotPattern className="absolute inset-0 opacity-5" />
+        <FadeIn>
+          <div className="relative z-10">
+            <Bounce>
+              <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-orange-100 to-orange-50 rounded-full mb-4 shadow-lg">
+                <CarrotLoader size="lg" />
+              </div>
+            </Bounce>
+            <SlideUp delay={0.3}>
+              <p className="text-lg text-gray-600 font-medium">Loading your question...</p>
+            </SlideUp>
+          </div>
+        </FadeIn>
       </div>
     );
   }
 
   if (waitingForNextQuestion) {
     return (
-      <div className="w-full max-w-lg mx-auto p-4 text-center">
-        <div className="inline-flex items-center justify-center p-2 bg-primary-light rounded-full mb-4">
-          <CarrotIcon size={32} />
-        </div>
-        <h2 className="text-xl font-bold mb-2">Waiting for next question</h2>
-        <div className="flex justify-center mt-4">
-          <div className="flex items-center space-x-2 text-text-muted">
-            <div className="relative">
-              <div className="w-3 h-3 bg-primary-light rounded-full animate-ping absolute"></div>
-              <div className="w-3 h-3 bg-primary rounded-full relative"></div>
+      <div className="w-full max-w-lg mx-auto p-4 text-center relative">
+        <CarrotPattern className="absolute inset-0 opacity-5" />
+        <FadeIn>
+          <div className="relative z-10">
+            <Bounce>
+              <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full mb-4 shadow-lg">
+                <ThinkingCarrot size={64} thoughtText="..." />
+              </div>
+            </Bounce>
+            
+            <SlideUp delay={0.3}>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Get Ready!</h2>
+              <p className="text-gray-600 mb-6">The host is preparing the next question...</p>
+            </SlideUp>
+            
+            <div className="flex justify-center">
+              <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg border border-blue-200">
+                <div className="relative">
+                  <div className="w-3 h-3 bg-blue-300 rounded-full animate-ping absolute"></div>
+                  <div className="w-3 h-3 bg-blue-500 rounded-full relative"></div>
+                </div>
+                <span className="text-gray-600 font-medium">Preparing next question...</span>
+              </div>
             </div>
-            <span>The host is preparing the next question...</span>
           </div>
-        </div>
+        </FadeIn>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto p-4">
-      <div className="text-center mb-4">
-        <div className="inline-block px-3 py-1 rounded-full bg-primary-light text-sm font-medium mb-2">
-          Question {currentQuestion.order}
-        </div>
-      </div>
+    <div className="w-full max-w-lg mx-auto p-4 relative">
+      <CarrotPattern className="absolute inset-0 opacity-5" />
+      
+      <StaggerContainer>
+        <StaggerItem>
+          <div className="text-center mb-6 relative z-10">
+            <FadeIn>
+              <div className="inline-flex items-center space-x-3 px-4 py-2 rounded-full bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 shadow-lg mb-4">
+                <ThinkingCarrot size={24} />
+                <span className="font-bold text-orange-700">
+                  Question {currentQuestion.order}
+                </span>
+              </div>
+            </FadeIn>
+          </div>
+        </StaggerItem>
 
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <QuestionDisplay
-          question={currentQuestion}
-          options={options}
-          onAnswer={handleAnswer}
-          showCorrectAnswer={showFeedback}
-          selectedOptionId={selectedOptionId || undefined}
-          disabled={!!selectedOptionId}
-        />
-      </div>
+        <StaggerItem>
+          <Card className="p-6 bg-white border-orange-200 shadow-lg relative z-10">
+            <div className="flex items-center space-x-3 mb-4">
+              <StudentCarrot size={24} />
+              <span className="text-sm font-medium text-gray-600">Think carefully!</span>
+            </div>
+            
+            <QuestionDisplay
+              question={currentQuestion}
+              options={options}
+              onAnswer={handleAnswer}
+              showCorrectAnswer={showFeedback}
+              selectedOptionId={selectedOptionId || undefined}
+              disabled={!!selectedOptionId}
+            />
+          </Card>
+        </StaggerItem>
+      </StaggerContainer>
 
       {showFeedback && (
-        <div 
-          className="mt-6 p-4 rounded-lg text-white text-center"
-          style={{ 
-            backgroundColor: isAnswerCorrect ? theme.colors.success : theme.colors.error,
-            animation: 'fadeIn 0.5s ease-in-out'
-          }}
-        >
-          <p className="text-lg font-bold">
-            {isAnswerCorrect ? 'Correct!' : 'Incorrect!'}
-          </p>
-        </div>
+        <Pop delay={0.2}>
+          <Card className={`mt-6 p-6 text-white text-center shadow-lg relative z-10 ${
+            isAnswerCorrect
+              ? 'bg-gradient-to-r from-green-500 to-green-600 border-green-400'
+              : 'bg-gradient-to-r from-red-500 to-red-600 border-red-400'
+          }`}>
+            <div className="flex items-center justify-center space-x-3 mb-2">
+              {isAnswerCorrect ? (
+                <StudentCarrot size={32} pose="jumping" />
+              ) : (
+                <StudentCarrot size={32} />
+              )}
+              <p className="text-2xl font-bold">
+                {isAnswerCorrect ? 'Excellent!' : 'Not quite right!'}
+              </p>
+            </div>
+            <p className="text-lg opacity-90">
+              {isAnswerCorrect
+                ? 'Great job! You got it right!'
+                : 'Don\'t worry, keep learning!'
+              }
+            </p>
+          </Card>
+        </Pop>
       )}
     </div>
   );

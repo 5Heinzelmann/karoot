@@ -3,7 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Participant } from '@/lib/types';
 import { ParticipantsList } from '@/components/ui/participants-list';
-import { CarrotIcon } from '@/components/ui/carrot-icon';
+import { StudentCarrot } from '@/components/illustrations';
+import { FadeIn, SlideUp, StaggerContainer, StaggerItem, Bounce } from '@/components/animations';
+import { CarrotPattern, CarrotLoader } from '@/components/illustrations';
+import { Card } from '@/components/ui/card';
 import { theme } from '@/lib/theme';
 import { createClient } from '@/lib/supabase/client';
 
@@ -89,48 +92,84 @@ export function LobbyView({
   }, [gameId, supabase]);
 
   return (
-    <div className="w-full max-w-lg mx-auto p-4">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center p-2 bg-primary-light rounded-full mb-2">
-          <CarrotIcon size={32} />
+    <div className="w-full max-w-lg mx-auto p-4 relative">
+      {/* Carrot background pattern */}
+      <CarrotPattern className="absolute inset-0 opacity-5" />
+      
+      <FadeIn>
+        <div className="text-center mb-8 relative z-10">
+          <Bounce delay={0.2}>
+            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-orange-100 to-orange-50 rounded-full mb-4 shadow-lg">
+              <StudentCarrot size={64} pose="standing" withBackpack={true} />
+            </div>
+          </Bounce>
+          
+          <SlideUp delay={0.4}>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent mb-2">
+              Ready to Learn!
+            </h1>
+            <p className="text-lg text-gray-600">
+              The host will start the game soon
+            </p>
+          </SlideUp>
         </div>
-        <h1 className="text-2xl font-bold" style={{ color: theme.colors.primary.DEFAULT }}>
-          Waiting for the game to start
-        </h1>
-        <p className="text-text-muted mt-2">
-          The host will start the game soon
-        </p>
-      </div>
+      </FadeIn>
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="text-sm text-text-muted">You joined as</div>
-            <div className="font-bold text-lg">{nickname}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-text-muted">Game Code</div>
-            <div className="font-bold text-lg tracking-wider">{gameCode}</div>
+      <StaggerContainer>
+        <StaggerItem>
+          <Card className="p-6 mb-6 bg-gradient-to-br from-white to-orange-50 border-orange-200 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <StudentCarrot size={24} />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 font-medium">You joined as</div>
+                  <div className="font-bold text-xl text-gray-800">{nickname}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-500 font-medium">Game Code</div>
+                <div className="font-bold text-2xl tracking-wider text-orange-600 font-mono">
+                  {gameCode}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </StaggerItem>
+
+        <StaggerItem>
+          <Card className="p-6 bg-white border-orange-200 shadow-lg">
+            <div className="flex items-center space-x-2 mb-4">
+              <StudentCarrot size={20} />
+              <h3 className="font-semibold text-gray-800">Fellow Students</h3>
+            </div>
+            <ParticipantsList
+              participants={participants}
+              maxHeight="300px"
+            />
+            
+            {participants.length === 0 && (
+              <div className="text-center py-8">
+                <CarrotLoader size="md" />
+                <p className="text-gray-500 mt-2">Waiting for other students to join...</p>
+              </div>
+            )}
+          </Card>
+        </StaggerItem>
+      </StaggerContainer>
+
+      <FadeIn delay={0.8}>
+        <div className="mt-8 flex justify-center">
+          <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg border border-orange-200">
+            <div className="relative">
+              <div className="w-3 h-3 bg-orange-300 rounded-full animate-ping absolute"></div>
+              <div className="w-3 h-3 bg-orange-500 rounded-full relative"></div>
+            </div>
+            <span className="text-gray-600 font-medium">Waiting for host to start the game...</span>
           </div>
         </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <ParticipantsList 
-          participants={participants} 
-          maxHeight="300px"
-        />
-      </div>
-
-      <div className="mt-8 flex justify-center">
-        <div className="flex items-center space-x-2 text-text-muted">
-          <div className="relative">
-            <div className="w-3 h-3 bg-primary-light rounded-full animate-ping absolute"></div>
-            <div className="w-3 h-3 bg-primary rounded-full relative"></div>
-          </div>
-          <span>Waiting for host to start the game...</span>
-        </div>
-      </div>
+      </FadeIn>
     </div>
   );
 }

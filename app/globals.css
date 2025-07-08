@@ -4,57 +4,110 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Carrot-themed color palette */
+    --carrot-orange: #FF7A00;
+    --carrot-light: #FFA64D;
+    --carrot-dark: #E56C00;
+    --carrot-pale: #FFEAD1;
+    --carrot-bright: #FF9124;
+    
+    --leaf-green: #4CAF50;
+    --leaf-light: #7BC67E;
+    --leaf-dark: #3B873E;
+    --leaf-bright: #66BB6A;
+    --leaf-pale: #E8F5E9;
+    
+    --soil-brown: #8D6E63;
+    --soil-light: #A18879;
+    --soil-dark: #6D4C41;
+    --soil-pale: #EFEBE9;
+    
+    --feedback-success: #66BB6A;
+    --feedback-error: #FF5252;
+    --feedback-warning: #FFD740;
+    --feedback-info: #29B6F6;
+    
+    --background-primary: #FFFAF5;
+    --background-secondary: #FFF3E0;
+    --background-card: #FFFFFF;
+    --background-dark: #F5EEE6;
+
+    /* Shadcn/ui compatible variables */
+    --background: 30 40% 98%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
+    --secondary: 123 38% 57%;
     --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
+    --muted: 30 40% 96%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
+    --accent: 30 40% 96%;
     --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --border: 30 40% 89%;
+    --input: 30 40% 89%;
+    --ring: 24 100% 50%;
+    --chart-1: 24 100% 50%;
+    --chart-2: 123 38% 57%;
+    --chart-3: 16 25% 38%;
+    --chart-4: 51 100% 50%;
+    --chart-5: 204 98% 39%;
     --radius: 0.5rem;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
+    /* Dark mode carrot theme adjustments */
+    --carrot-orange: #FF9124;
+    --carrot-light: #FFB366;
+    --carrot-dark: #CC5500;
+    --carrot-pale: #2D1B0F;
+    --carrot-bright: #FFAA47;
+    
+    --leaf-green: #66BB6A;
+    --leaf-light: #81C784;
+    --leaf-dark: #2E7D32;
+    --leaf-bright: #4CAF50;
+    --leaf-pale: #1B2E1B;
+    
+    --soil-brown: #A18879;
+    --soil-light: #BCAAA0;
+    --soil-dark: #5D4037;
+    --soil-pale: #2C2420;
+    
+    --background-primary: #1A1611;
+    --background-secondary: #211C16;
+    --background-card: #2A251F;
+    --background-dark: #141210;
+
+    /* Shadcn/ui dark mode variables */
+    --background: 20 14% 4.1%;
+    --foreground: 0 0% 95%;
+    --card: 24 9.8% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --secondary: 123 38% 57%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
+    --muted: 0 0% 15%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --accent: 0 0% 15%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --ring: 24 100% 50%;
+    --chart-1: 24 100% 50%;
+    --chart-2: 123 38% 57%;
+    --chart-3: 16 25% 38%;
+    --chart-4: 51 100% 50%;
+    --chart-5: 204 98% 39%;
   }
 }
 
@@ -64,5 +117,321 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Animation keyframes */
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -30px, 0);
+  }
+  70% {
+    transform: translate3d(0, -15px, 0);
+  }
+  90% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes wiggle {
+  0%, 7% {
+    transform: rotateZ(0);
+  }
+  15% {
+    transform: rotateZ(-15deg);
+  }
+  20% {
+    transform: rotateZ(10deg);
+  }
+  25% {
+    transform: rotateZ(-10deg);
+  }
+  30% {
+    transform: rotateZ(6deg);
+  }
+  35% {
+    transform: rotateZ(-4deg);
+  }
+  40%, 100% {
+    transform: rotateZ(0);
+  }
+}
+
+@keyframes grow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideLeft {
+  0% {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideRight {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Typography utility classes */
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-fredoka);
+  }
+  
+  .font-body {
+    font-family: var(--font-baloo-2);
+  }
+  
+  .font-ui {
+    font-family: var(--font-quicksand);
+  }
+  
+  .font-mono {
+    font-family: var(--font-geist-sans);
+  }
+
+  .text-carrot {
+    color: var(--carrot-orange);
+  }
+  
+  .text-carrot-light {
+    color: var(--carrot-light);
+  }
+  
+  .text-carrot-dark {
+    color: var(--carrot-dark);
+  }
+  
+  .text-leaf {
+    color: var(--leaf-green);
+  }
+  
+  .text-leaf-light {
+    color: var(--leaf-light);
+  }
+  
+  .text-leaf-dark {
+    color: var(--leaf-dark);
+  }
+  
+  .text-soil {
+    color: var(--soil-brown);
+  }
+  
+  .bg-carrot {
+    background-color: var(--carrot-orange);
+  }
+  
+  .bg-carrot-pale {
+    background-color: var(--carrot-pale);
+  }
+  
+  .bg-leaf {
+    background-color: var(--leaf-green);
+  }
+  
+  .bg-leaf-pale {
+    background-color: var(--leaf-pale);
+  }
+  
+  .bg-soil-pale {
+    background-color: var(--soil-pale);
+  }
+  
+  .bg-soil {
+    background-color: var(--soil-brown);
+  }
+  
+  /* Background patterns */
+  .bg-pattern-carrots {
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(255, 122, 0, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 122, 0, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(255, 122, 0, 0.02) 0%, transparent 50%);
+    background-size: 400px 400px, 300px 300px, 200px 200px;
+    background-position: 0 0, 100px 100px, 200px 200px;
+  }
+  
+  .bg-pattern-leaves {
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(76, 175, 80, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 70% 70%, rgba(76, 175, 80, 0.03) 0%, transparent 50%);
+    background-size: 250px 250px, 350px 350px;
+    background-position: 0 0, 150px 150px;
+  }
+  
+  .bg-pattern-celebration {
+    background-image:
+      radial-gradient(circle at 25% 25%, rgba(255, 122, 0, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 75% 75%, rgba(76, 175, 80, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 50% 10%, rgba(255, 166, 77, 0.04) 0%, transparent 30%),
+      radial-gradient(circle at 10% 90%, rgba(123, 198, 126, 0.04) 0%, transparent 30%);
+    background-size: 300px 300px, 400px 400px, 200px 200px, 250px 250px;
+    background-position: 0 0, 200px 200px, 100px 50px, 300px 150px;
+    animation: float 20s ease-in-out infinite;
+  }
+  
+  .bg-pattern-game {
+    background-image:
+      linear-gradient(45deg, rgba(255, 234, 209, 0.3) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(255, 234, 209, 0.3) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(232, 245, 233, 0.2) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(232, 245, 233, 0.2) 75%);
+    background-size: 60px 60px;
+    background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
+  }
+  
+  /* Floating animation for celebration background */
+  @keyframes float {
+    0%, 100% {
+      background-position: 0 0, 200px 200px, 100px 50px, 300px 150px;
+    }
+    25% {
+      background-position: 50px 20px, 250px 180px, 120px 70px, 280px 170px;
+    }
+    50% {
+      background-position: 20px 40px, 180px 220px, 80px 30px, 320px 130px;
+    }
+    75% {
+      background-position: 70px 10px, 220px 240px, 140px 80px, 260px 190px;
+    }
+  }
+  
+  /* Carrot shadow utilities */
+  .shadow-carrot {
+    box-shadow: 0 4px 12px rgba(255, 122, 0, 0.15);
+  }
+  
+  .shadow-carrot-lg {
+    box-shadow: 0 8px 24px rgba(255, 122, 0, 0.2);
+  }
+  
+  .shadow-leaf {
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+  }
+  
+  /* Page transition utilities */
+  .page-transition {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .page-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  .page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .page-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .page-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  .animate-bounce {
+    animation: bounce 1s infinite;
+  }
+  
+  .animate-pop {
+    animation: pop 0.3s ease-in-out;
+  }
+  
+  .animate-wiggle {
+    animation: wiggle 1s ease-in-out;
+  }
+  
+  .animate-grow {
+    animation: grow 0.3s ease-out;
+  }
+  
+  .animate-fade {
+    animation: fade 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  .animate-slide-left {
+    animation: slideLeft 0.3s ease-out;
+  }
+  
+  .animate-slide-right {
+    animation: slideRight 0.3s ease-out;
   }
 }

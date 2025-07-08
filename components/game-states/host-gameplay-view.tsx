@@ -6,6 +6,10 @@ import { Game, Question, Option, AnswerDistribution } from '@/lib/types';
 import { QuestionDisplay } from '@/components/ui/question-display';
 import { AnswerDistribution as AnswerDistributionComponent } from '@/components/ui/answer-distribution';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { QuizMasterCarrot, StudentCarrot } from '@/components/illustrations';
+import { FadeIn, SlideUp, StaggerContainer, StaggerItem, HoverScale, Bounce } from '@/components/animations';
+import { CarrotPattern, CarrotProgress } from '@/components/illustrations';
 import { theme } from '@/lib/theme';
 import { createClient } from '@/lib/supabase/client';
 

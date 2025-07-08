@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { CarrotIcon } from '@/components/ui/carrot-icon';
-import { theme } from '@/lib/theme';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { QuizMasterCarrot } from '@/components/illustrations/carrot-characters/quiz-master-carrot';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import { GameStatus } from '@/lib/types';
@@ -108,53 +109,59 @@ export function CreateGameForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
-      <div className="flex items-center justify-center mb-6">
-        <CarrotIcon size={32} />
-        <h2 className="text-2xl font-bold ml-2" style={{ color: theme.colors.primary.DEFAULT }}>
-          Create a Game
-        </h2>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="gameTitle" className="block text-sm font-medium mb-1">
-            Game Title
-          </label>
-          <Input
-            id="gameTitle"
-            type="text"
-            placeholder="Enter a title for your game"
-            value={title}
-            onChange={handleTitleChange}
-            maxLength={50}
-            className="text-center"
-            style={{ borderColor: theme.colors.primary.light }}
-          />
+    <Card className="border-carrot-pale shadow-carrot">
+      <CardHeader className="text-center pb-4">
+        <div className="flex justify-center mb-2">
+          <QuizMasterCarrot size={40} />
         </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm">
-            {error}
-          </div>
-        )}
-        
-        <Button
-          type="submit"
-          className="w-full py-2"
-          disabled={isLoading}
-          style={{ 
-            backgroundColor: theme.colors.secondary.DEFAULT,
-            color: 'white'
-          }}
-        >
-          {isLoading ? 'Creating...' : 'Create Game'}
-        </Button>
-      </form>
+        <CardTitle className="text-2xl font-heading text-carrot">
+          Create a Game
+        </CardTitle>
+      </CardHeader>
       
-      <div className="mt-4 text-center text-sm text-text-muted">
-        <p>You&apos;ll be able to add questions after creating the game</p>
-      </div>
-    </div>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="gameTitle" className="text-soil font-ui font-medium">
+              Game Title
+            </Label>
+            <Input
+              id="gameTitle"
+              type="text"
+              placeholder="Enter a title for your game"
+              value={title}
+              onChange={handleTitleChange}
+              maxLength={50}
+              className="text-center font-body border-carrot-light focus:border-carrot focus:ring-carrot/20"
+            />
+          </div>
+          
+          {error && (
+            <div className="p-3 rounded-lg bg-feedback-error/10 border border-feedback-error/20 text-feedback-error text-sm font-ui">
+              {error}
+            </div>
+          )}
+          
+          <Button
+            type="submit"
+            className="w-full py-3 bg-leaf hover:bg-leaf-dark text-white font-ui font-semibold rounded-lg shadow-leaf transition-all duration-200 hover:shadow-lg"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Creating...
+              </span>
+            ) : (
+              'Create Game'
+            )}
+          </Button>
+        </form>
+        
+        <div className="mt-4 text-center text-sm text-soil-light font-ui">
+          <p>You&apos;ll be able to add questions after creating the game</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

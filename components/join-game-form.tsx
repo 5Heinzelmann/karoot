@@ -4,8 +4,9 @@ import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
-import {CarrotIcon} from '@/components/ui/carrot-icon';
-import {theme} from '@/lib/theme';
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Label} from '@/components/ui/label';
+import {StudentCarrot} from '@/components/illustrations/carrot-characters/student-carrot';
 import {createClient} from '@/lib/supabase/client';
 
 export function JoinGameForm() {
@@ -119,68 +120,71 @@ export function JoinGameForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
-      <div className="flex items-center justify-center mb-6">
-        <CarrotIcon size={32} />
-        <h2 className="text-2xl font-bold ml-2" style={{ color: theme.colors.primary.DEFAULT }}>
+    <Card className="border-carrot-pale shadow-carrot">
+      <CardHeader className="text-center pb-4">
+        <div className="flex justify-center mb-2">
+          <StudentCarrot size={40} />
+        </div>
+        <CardTitle className="text-2xl font-heading text-carrot">
           Join a Game
-        </h2>
-      </div>
+        </CardTitle>
+      </CardHeader>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="gameCode" className="block text-sm font-medium mb-1">
-            Game Code
-          </label>
-          <Input
-            id="gameCode"
-            type="text"
-            inputMode="numeric"
-            placeholder="Enter 4-digit code"
-            value={gameCode}
-            onChange={handleGameCodeChange}
-            className="text-center text-2xl tracking-widest"
-            style={{ 
-              borderColor: theme.colors.primary.light,
-              letterSpacing: '0.5em'
-            }}
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="nickname" className="block text-sm font-medium mb-1">
-            Your Nickname
-          </label>
-          <Input
-            id="nickname"
-            type="text"
-            placeholder="Enter your nickname"
-            value={nickname}
-            onChange={handleNicknameChange}
-            maxLength={15}
-            className="text-center"
-            style={{ borderColor: theme.colors.primary.light }}
-          />
-        </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm">
-            {error}
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="gameCode" className="text-soil font-ui font-medium">
+              Game Code
+            </Label>
+            <Input
+              id="gameCode"
+              type="text"
+              inputMode="numeric"
+              placeholder="Enter 4-digit code"
+              value={gameCode}
+              onChange={handleGameCodeChange}
+              className="text-center text-2xl tracking-widest font-mono border-carrot-light focus:border-carrot focus:ring-carrot/20"
+              style={{ letterSpacing: '0.5em' }}
+            />
           </div>
-        )}
-        
-        <Button
-          type="submit"
-          className="w-full py-2"
-          disabled={isLoading}
-          style={{ 
-            backgroundColor: theme.colors.primary.DEFAULT,
-            color: 'white'
-          }}
-        >
-          {isLoading ? 'Joining...' : 'Join Game'}
-        </Button>
-      </form>
-    </div>
+          
+          <div>
+            <Label htmlFor="nickname" className="text-soil font-ui font-medium">
+              Your Nickname
+            </Label>
+            <Input
+              id="nickname"
+              type="text"
+              placeholder="Enter your nickname"
+              value={nickname}
+              onChange={handleNicknameChange}
+              maxLength={15}
+              className="text-center font-body border-carrot-light focus:border-carrot focus:ring-carrot/20"
+            />
+          </div>
+          
+          {error && (
+            <div className="p-3 rounded-lg bg-feedback-error/10 border border-feedback-error/20 text-feedback-error text-sm font-ui">
+              {error}
+            </div>
+          )}
+          
+          <Button
+            type="submit"
+            className="w-full py-3 bg-carrot hover:bg-carrot-dark text-white font-ui font-semibold rounded-lg shadow-carrot transition-all duration-200 hover:shadow-lg"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Joining...
+              </span>
+            ) : (
+              'Join Game'
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

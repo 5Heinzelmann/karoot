@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Play, Edit, Users } from 'lucide-react';
+import { QuizMasterCarrot } from '@/components/illustrations/carrot-characters/quiz-master-carrot';
 
 export function GamesList() {
   const router = useRouter();
@@ -45,15 +46,15 @@ export function GamesList() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-soil/10 text-soil border-soil/20';
       case 'lobby':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-carrot-light/20 text-carrot-dark border-carrot-light/30';
       case 'in_progress':
-        return 'bg-green-100 text-green-800';
+        return 'bg-leaf/20 text-leaf-dark border-leaf/30';
       case 'finished':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-carrot/20 text-carrot-dark border-carrot/30';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-soil/10 text-soil border-soil/20';
     }
   };
 
@@ -82,17 +83,21 @@ export function GamesList() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="text-lg">Loading your games...</div>
+      <div className="flex flex-col justify-center items-center py-12">
+        <QuizMasterCarrot size={60} className="animate-bounce mb-4" />
+        <div className="text-lg font-ui text-soil">Loading your games...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <div className="text-red-600 mb-4">{error}</div>
-        <Button onClick={fetchGames} variant="outline">
+      <div className="text-center py-12">
+        <div className="text-feedback-error mb-6 font-ui text-lg">{error}</div>
+        <Button
+          onClick={fetchGames}
+          className="bg-carrot hover:bg-carrot-dark text-white font-ui font-semibold shadow-carrot"
+        >
           Try Again
         </Button>
       </div>
@@ -101,61 +106,70 @@ export function GamesList() {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">My Games</h1>
-        <Button onClick={handleCreateGame} className="flex items-center gap-2">
-          <Plus size={16} />
-          Create New Game
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-heading font-bold text-carrot">My Garden of Games</h1>
+        <Button
+          onClick={handleCreateGame}
+          className="flex items-center gap-2 bg-leaf hover:bg-leaf-dark text-white font-ui font-semibold shadow-leaf px-6 py-3"
+        >
+          <Plus size={18} />
+          Plant New Game
         </Button>
       </div>
 
       {games.length === 0 ? (
-        <Card className="text-center py-12">
+        <Card className="text-center py-16 border-carrot-pale shadow-carrot-lg">
           <CardContent>
-            <div className="text-gray-500 mb-4">
-              <Users size={48} className="mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-semibold mb-2">No games yet</h3>
-              <p>Create your first game to get started!</p>
+            <div className="text-soil/70 mb-6">
+              <QuizMasterCarrot size={80} className="mx-auto mb-6" />
+              <h3 className="text-2xl font-heading font-bold mb-3 text-soil">Your garden is empty!</h3>
+              <p className="font-ui text-lg">Plant your first quiz game and watch knowledge grow!</p>
             </div>
-            <Button onClick={handleCreateGame} className="mt-4">
-              <Plus size={16} className="mr-2" />
-              Create Your First Game
+            <Button
+              onClick={handleCreateGame}
+              className="mt-6 bg-leaf hover:bg-leaf-dark text-white font-ui font-semibold shadow-leaf px-8 py-4 text-lg"
+            >
+              <Plus size={20} className="mr-3" />
+              Plant Your First Game
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {games.map((game) => (
-            <Card key={game.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+            <Card key={game.id} className="hover:shadow-carrot-lg transition-all duration-200 cursor-pointer border-carrot-pale hover:border-carrot group">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg truncate">{game.title}</CardTitle>
-                  <Badge className={getStatusColor(game.status)}>
+                  <CardTitle className="text-xl font-heading truncate text-soil group-hover:text-carrot transition-colors">{game.title}</CardTitle>
+                  <Badge className={`${getStatusColor(game.status)} font-ui font-medium border`}>
                     {getStatusText(game.status)}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600">
-                    <div>Game Code: <span className="font-mono font-bold">{game.code}</span></div>
+                <div className="space-y-4">
+                  <div className="text-sm text-soil/70 font-ui space-y-1">
+                    <div>Game Code: <span className="font-mono font-bold text-carrot">{game.code}</span></div>
                     <div>Created: {new Date(game.created_at).toLocaleDateString()}</div>
                   </div>
                   
                   <div className="flex gap-2">
                     <Button
                       onClick={() => handleGameClick(game.id)}
-                      className="flex-1 flex items-center gap-2"
-                      variant={game.status === 'draft' ? 'default' : 'outline'}
+                      className={`flex-1 flex items-center gap-2 font-ui font-semibold transition-all duration-200 ${
+                        game.status === 'draft'
+                          ? 'bg-carrot hover:bg-carrot-dark text-white shadow-carrot'
+                          : 'bg-leaf hover:bg-leaf-dark text-white shadow-leaf'
+                      }`}
                     >
                       {game.status === 'draft' ? (
                         <>
-                          <Edit size={14} />
+                          <Edit size={16} />
                           Edit
                         </>
                       ) : (
                         <>
-                          <Play size={14} />
+                          <Play size={16} />
                           Manage
                         </>
                       )}

@@ -8,7 +8,7 @@ import { LobbyView } from '@/components/game-states/lobby-view';
 import { GameplayView } from '@/components/game-states/gameplay-view';
 import { ResultsView } from '@/components/game-states/results-view';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
-import { theme } from '@/lib/theme';
+import { QuizMasterCarrot } from '@/components/illustrations/carrot-characters/quiz-master-carrot';
 import { createClient } from '@/lib/supabase/client';
 
 // Extend Participant type with scores for our UI
@@ -271,10 +271,10 @@ export default function GamePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <CarrotIcon size={60} color={theme.colors.primary.DEFAULT} className="mx-auto animate-bounce" />
-          <p className="mt-4 text-text-muted">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-pattern-game">
+        <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-carrot-lg border border-carrot-pale">
+          <QuizMasterCarrot size={80} className="mx-auto animate-bounce" />
+          <p className="mt-4 text-soil font-ui text-lg">Loading your game...</p>
         </div>
       </div>
     );
@@ -282,14 +282,14 @@ export default function GamePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="text-error text-4xl mb-4">⚠️</div>
-          <h1 className="text-xl font-bold mb-2">Oops! Something went wrong</h1>
-          <p className="text-text-muted mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-primary text-white rounded-md"
+      <div className="min-h-screen flex items-center justify-center bg-pattern-game">
+        <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-carrot-lg border border-carrot-pale max-w-md">
+          <div className="text-feedback-error text-4xl mb-4">⚠️</div>
+          <h1 className="text-xl font-heading font-bold mb-2 text-soil">Oops! Something went wrong</h1>
+          <p className="text-soil/70 font-ui mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-carrot hover:bg-carrot-dark text-white rounded-lg font-ui font-semibold shadow-carrot transition-all duration-200 hover:shadow-lg"
           >
             Try Again
           </button>
@@ -301,13 +301,13 @@ export default function GamePage() {
   // Render the appropriate view based on game status
   if (!game) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="text-xl font-bold mb-2">Game Not Found</h1>
-          <p className="text-text-muted mb-4">The game you&apos;re looking for doesn&apos;t exist.</p>
+      <div className="min-h-screen flex items-center justify-center bg-pattern-game">
+        <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-carrot-lg border border-carrot-pale max-w-md">
+          <h1 className="text-xl font-heading font-bold mb-2 text-soil">Game Not Found</h1>
+          <p className="text-soil/70 font-ui mb-6">The game you&apos;re looking for doesn&apos;t exist.</p>
           <Link
             href="/"
-            className="px-4 py-2 bg-primary text-white rounded-md inline-block"
+            className="px-6 py-3 bg-carrot hover:bg-carrot-dark text-white rounded-lg font-ui font-semibold shadow-carrot transition-all duration-200 hover:shadow-lg inline-block"
           >
             Back to Home
           </Link>
@@ -340,10 +340,10 @@ export default function GamePage() {
       
       if (isLoadingResults) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center">
-              <CarrotIcon size={60} color={theme.colors.primary.DEFAULT} className="mx-auto animate-bounce" />
-              <p className="mt-4 text-text-muted">Loading your results...</p>
+          <div className="min-h-screen flex items-center justify-center bg-pattern-celebration">
+            <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-carrot-lg border border-carrot-pale">
+              <QuizMasterCarrot size={80} className="mx-auto animate-bounce" />
+              <p className="mt-4 text-soil font-ui text-lg">Calculating your results...</p>
             </div>
           </div>
         );
