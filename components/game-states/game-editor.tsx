@@ -26,6 +26,12 @@ export function GameEditor({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
   const [newQuestionText, setNewQuestionText] = useState('');
+  const [newQuestionOptions, setNewQuestionOptions] = useState<Array<{text: string, is_correct: boolean}>>([
+    { text: '', is_correct: true },
+    { text: '', is_correct: false },
+    { text: '', is_correct: false },
+    { text: '', is_correct: false }
+  ]);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [editingQuestionText, setEditingQuestionText] = useState('');
   const [editingOptions, setEditingOptions] = useState<Option[]>([]);
@@ -123,6 +129,18 @@ export function GameEditor({
       return;
     }
 
+    // Check if at least one option is marked as correct
+    if (!newQuestionOptions.some(option => option.is_correct)) {
+      setError('At least one option must be marked as correct');
+      return;
+    }
+
+    // Check if all options have text
+    if (newQuestionOptions.some(option => !option.text.trim())) {
+      setError('All options must have text');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -155,11 +173,11 @@ export function GameEditor({
         
       if (questionError) throw questionError;
       
-      // Create default options for the new question
-      const optionsToInsert = Array(4).fill(null).map((_, index) => ({
+      // Create options from user input
+      const optionsToInsert = newQuestionOptions.map((option) => ({
         question_id: newQuestion.id,
-        text: `Option ${index + 1}`,
-        is_correct: index === 0, // First option is correct by default
+        text: option.text,
+        is_correct: option.is_correct,
       }));
       
       // Insert options
@@ -177,7 +195,14 @@ export function GameEditor({
         [newQuestion.id]: newOptions,
       });
       
+      // Reset form
       setNewQuestionText('');
+      setNewQuestionOptions([
+        { text: '', is_correct: true },
+        { text: '', is_correct: false },
+        { text: '', is_correct: false },
+        { text: '', is_correct: false }
+      ]);
       setIsAddingQuestion(false);
     } catch (err) {
       console.error('Error adding question:', err);
@@ -348,6 +373,20 @@ export function GameEditor({
       is_correct: i === index,
     }));
     setEditingOptions(updatedOptions);
+  };
+
+  const handleNewQuestionOptionTextChange = (index: number, text: string) => {
+    const updatedOptions = [...newQuestionOptions];
+    updatedOptions[index] = { ...updatedOptions[index], text };
+    setNewQuestionOptions(updatedOptions);
+  };
+
+  const handleNewQuestionCorrectOptionChange = (index: number) => {
+    const updatedOptions = newQuestionOptions.map((option, i) => ({
+      ...option,
+      is_correct: i === index,
+    }));
+    setNewQuestionOptions(updatedOptions);
   };
 
   const handlePublishGame = async () => {
@@ -608,6 +647,9 @@ export function GameEditor({
             <h3 className="font-medium mb-4">Add New Question</h3>
             
             <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Question Text
+              </label>
               <Input
                 value={newQuestionText}
                 onChange={(e) => setNewQuestionText(e.target.value)}
@@ -615,6 +657,33 @@ export function GameEditor({
                 placeholder="Enter question text"
                 autoFocus
               />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                Answer Options (select one correct answer)
+              </label>
+              <div className="space-y-3">
+                {newQuestionOptions.map((option, optionIndex) => (
+                  <div key={optionIndex} className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      id={`new-option-${optionIndex}`}
+                      name="new-correct-option"
+                      checked={option.is_correct}
+                      onChange={() => handleNewQuestionCorrectOptionChange(optionIndex)}
+                      className="h-4 w-4"
+                      style={{ accentColor: theme.colors.secondary.DEFAULT }}
+                    />
+                    <Input
+                      value={option.text}
+                      onChange={(e) => handleNewQuestionOptionTextChange(optionIndex, e.target.value)}
+                      className="flex-1"
+                      placeholder={`Option ${optionIndex + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
             
             <div className="flex space-x-2">
@@ -630,6 +699,12 @@ export function GameEditor({
                 onClick={() => {
                   setIsAddingQuestion(false);
                   setNewQuestionText('');
+                  setNewQuestionOptions([
+                    { text: '', is_correct: true },
+                    { text: '', is_correct: false },
+                    { text: '', is_correct: false },
+                    { text: '', is_correct: false }
+                  ]);
                 }}
                 variant="outline"
               >
