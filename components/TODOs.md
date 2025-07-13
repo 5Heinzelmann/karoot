@@ -1,2 +1,5 @@
+- Soft Font
+- hover zoom
+- round buttons
 - "close question" has to disable answer functionality
 - Als Teilnehmer möchte ich nach Beantworten einer Frage nicht sofort sehen, ob ich richtig oder falsch lag - erst wenn vom Host die Frage zu "question closed" wechselt. 
