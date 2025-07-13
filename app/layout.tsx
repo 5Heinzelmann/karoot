@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { Fredoka } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AuthButton } from "@/components/auth-button";
@@ -17,10 +18,11 @@ export const metadata: Metadata = {
   description: "Plant some questions, harvest lots of fun!"
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fredoka = Fredoka({
+  variable: "--font-fredoka",
   display: "swap",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export default async function RootLayout({
@@ -35,7 +37,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${fredoka.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

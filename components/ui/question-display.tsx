@@ -87,7 +87,7 @@ export function QuestionDisplay({
             key={option.id}
             onClick={() => handleOptionClick(option.id)}
             disabled={disabled || answered}
-            className="flex items-center justify-center p-6 rounded-lg border-2 shadow-sm transition-all hover:shadow-md"
+            className="flex items-center justify-center p-6 rounded-lg border-2 shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
             style={{
               backgroundColor: getOptionBackground(option),
               borderColor: getOptionBorder(option),
