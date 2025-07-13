@@ -1,101 +1,33 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import React, {useEffect, useState} from 'react';
+import {useParams, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
-import { Game, Participant, Question, Option, AnswerDistribution } from '@/lib/types';
-import { HostLobbyView } from '@/components/game-states/host-lobby-view';
-import { HostGameplayView } from '@/components/game-states/host-gameplay-view';
-import { HostResultsView } from '@/components/game-states/host-results-view';
-import { GameEditor } from '@/components/game-states/game-editor';
-import { CarrotIcon } from '@/components/ui/carrot-icon';
-import { theme } from '@/lib/theme';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/lib/auth/auth-context';
-
-// Mock data - in a real app, this would come from the backend
-const mockGame: Game = {
-  id: '123',
-  code: 'ABCD',
-  title: 'Quiz Game',
-  status: 'draft',
-  host_id: 'host-123',
-  current_question_index: 0,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+import {AnswerDistribution, Game, Option, Participant, Question} from '@/lib/types';
+import {HostLobbyView} from '@/components/game-states/host-lobby-view';
+import {HostGameplayView} from '@/components/game-states/host-gameplay-view';
+import {HostResultsView} from '@/components/game-states/host-results-view';
+import {GameEditor} from '@/components/game-states/game-editor';
+import {CarrotIcon} from '@/components/ui/carrot-icon';
+import {createClient} from '@/lib/supabase/client';
+import {useAuth} from '@/lib/auth/auth-context';
 
 // Extend Participant type with scores for our UI
 interface ParticipantWithScore extends Participant {
   score: number;
 }
 
-const mockParticipants: ParticipantWithScore[] = [
-  { id: 'p1', game_id: '123', name: 'Player 1', score: 0, created_at: new Date().toISOString() },
-  { id: 'p2', game_id: '123', name: 'Player 2', score: 0, created_at: new Date().toISOString() },
-  { id: 'p3', game_id: '123', name: 'Player 3', score: 0, created_at: new Date().toISOString() },
-];
-
-const mockQuestions: Question[] = [
-  {
-    id: 'q1',
-    game_id: '123',
-    text: 'What color is a carrot?',
-    order: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'q2',
-    game_id: '123',
-    text: 'How many sides does a triangle have?',
-    order: 2,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
-const mockOptions: Record<string, Option[]> = {
-  q1: [
-    { id: 'o1', question_id: 'q1', text: 'Orange', is_correct: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o2', question_id: 'q1', text: 'Blue', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o3', question_id: 'q1', text: 'Green', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o4', question_id: 'q1', text: 'Purple', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ],
-  q2: [
-    { id: 'o5', question_id: 'q2', text: 'Three', is_correct: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o6', question_id: 'q2', text: 'Four', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o7', question_id: 'q2', text: 'Five', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'o8', question_id: 'q2', text: 'Six', is_correct: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  ],
-};
-
-const mockAnswerDistributions: Record<string, AnswerDistribution[]> = {
-  q1: [
-    { option_id: 'o1', option_text: 'Orange', is_correct: true, count: 8, percentage: 80 },
-    { option_id: 'o2', option_text: 'Blue', is_correct: false, count: 1, percentage: 10 },
-    { option_id: 'o3', option_text: 'Green', is_correct: false, count: 1, percentage: 10 },
-    { option_id: 'o4', option_text: 'Purple', is_correct: false, count: 0, percentage: 0 },
-  ],
-  q2: [
-    { option_id: 'o5', option_text: 'Three', is_correct: true, count: 6, percentage: 60 },
-    { option_id: 'o6', option_text: 'Four', is_correct: false, count: 3, percentage: 30 },
-    { option_id: 'o7', option_text: 'Five', is_correct: false, count: 1, percentage: 10 },
-    { option_id: 'o8', option_text: 'Six', is_correct: false, count: 0, percentage: 0 },
-  ],
-};
-
 export default function HostPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const gameId = params.id as string;
   const { user } = useAuth();
-  const [game, setGame] = useState<Game>(mockGame);
-  const [participants, setParticipants] = useState<ParticipantWithScore[]>(mockParticipants);
-  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
-  const [options, setOptions] = useState<Record<string, Option[]>>(mockOptions);
+  const [game, setGame] = useState<Game>();
+  const [participants, setParticipants] = useState<ParticipantWithScore[]>();
+  const [questions, setQuestions] = useState<Question[]>();
+  const [options, setOptions] = useState<Record<string, Option[]>>();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
-  const [answerDistributions, setAnswerDistributions] = useState<Record<string, AnswerDistribution[]>>(mockAnswerDistributions);
+  const [answerDistributions, setAnswerDistributions] = useState<Record<string, AnswerDistribution[]>>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -254,7 +186,7 @@ export default function HostPage() {
           console.log("Host page: Game update received:", updatedGame);
           
           // If game status changed, update our local state
-          if (updatedGame.status !== game.status) {
+          if (game && updatedGame.status !== game.status) {
             console.log("Host page: Game status changed from", game.status, "to", updatedGame.status);
             setGame(updatedGame);
             
@@ -272,7 +204,7 @@ export default function HostPage() {
       console.log("Host page: Cleaning up game subscription");
       supabase.removeChannel(gameSubscription);
     };
-  }, [gameId, searchParams, user, game.status]);
+  }, [gameId, searchParams, user, game?.status]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleStartGame = async () => {
@@ -314,7 +246,7 @@ export default function HostPage() {
       console.log("Host page: Moving to next question");
       const supabase = createClient();
       
-      if (currentQuestionIndex < questions.length - 1) {
+      if (questions && currentQuestionIndex < questions.length - 1) {
         const nextIndex = currentQuestionIndex + 1;
         console.log("Host page: Current question index:", currentQuestionIndex, "Next index:", nextIndex);
         
@@ -379,7 +311,7 @@ export default function HostPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <CarrotIcon size={60} color={theme.colors.primary.DEFAULT} className="mx-auto animate-bounce" />
+          <CarrotIcon size={60} className="mx-auto animate-bounce" />
           <p className="mt-4 text-text-muted">Loading...</p>
         </div>
       </div>
@@ -405,64 +337,80 @@ export default function HostPage() {
   }
 
   // Render the appropriate view based on game status
+  if (!game) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-xl font-bold mb-2">Game Not Available</h1>
+          <p className="text-text-muted mb-4">This game could not be loaded.</p>
+        </div>
+      </div>
+    );
+  }
+
   switch (game.status) {
     case 'draft':
       return (
         <GameEditor
           game={game}
-          initialQuestions={questions}
-          initialOptions={options}
+          initialQuestions={questions || []}
+          initialOptions={options || {}}
         />
       );
     case 'lobby':
       return (
         <HostLobbyView
           game={game}
-          initialParticipants={participants}
+          initialParticipants={participants || []}
         />
       );
     case 'in_progress':
       console.log("Host page: Rendering in_progress view");
       console.log("Host page: Current question index:", currentQuestionIndex);
-      console.log("Host page: Total questions:", questions.length);
       
-      if (currentQuestionIndex >= questions.length) {
-        console.error("Host page: Current question index out of bounds");
+      if (!questions || questions.length === 0) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="text-center">
-              <div className="text-error text-4xl mb-4">⚠️</div>
-              <h1 className="text-xl font-bold mb-2">Question Configuration Error</h1>
-              <p className="text-text-muted mb-4">The current question index is out of bounds.</p>
-              <button
-                onClick={handleEndGame}
-                className="px-4 py-2 bg-primary text-white rounded-md"
-              >
-                End Game
-              </button>
+              <h1 className="text-xl font-bold mb-2">No Questions Available</h1>
+              <p className="text-text-muted mb-4">This game has no questions.</p>
             </div>
           </div>
         );
       }
       
+      console.log("Host page: Total questions:", questions.length);
+      
       const currentQuestion = questions[currentQuestionIndex];
       console.log("Host page: Current question:", currentQuestion);
       
-      const currentOptions = options[currentQuestion.id];
+      const currentOptions = options && currentQuestion ? options[currentQuestion.id] : [];
       console.log("Host page: Current options:", currentOptions ? currentOptions.length : 0);
       
       return (
         <HostGameplayView
           game={game}
           initialQuestion={currentQuestion}
-          initialOptions={currentOptions}
-          totalParticipants={participants.length}
+          initialOptions={currentOptions || []}
+          totalParticipants={participants?.length || 0}
         />
       );
     case 'finished':
       // Create question summaries from our data
+      if (!questions || questions.length === 0) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="text-center">
+              <h1 className="text-xl font-bold mb-2">No Questions Available</h1>
+              <p className="text-text-muted mb-4">This game has no questions to show results for.</p>
+            </div>
+          </div>
+        );
+      }
+      
       const questionSummaries = questions.map((question) => {
-        const distribution = answerDistributions[question.id] || [];
+        const distribution = answerDistributions && answerDistributions[question.id] ?
+          answerDistributions[question.id] : [];
         const totalAnswers = distribution.reduce((sum, item) => sum + item.count, 0);
         const correctOption = distribution.find(item => item.is_correct);
         const correctPercentage = correctOption && totalAnswers > 0
@@ -481,7 +429,7 @@ export default function HostPage() {
         <HostResultsView
           game={game}
           questionSummaries={questionSummaries}
-          totalParticipants={participants.length}
+          totalParticipants={participants?.length || 0}
         />
       );
     default:

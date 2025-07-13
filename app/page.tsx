@@ -3,7 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JoinGameForm } from '@/components/join-game-form';
 import { CreateGameForm } from '@/components/create-game-form';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
-import { theme } from '@/lib/theme';
 
 export default function HomePage() {
   return (
@@ -11,7 +10,7 @@ export default function HomePage() {
       <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-2">
-            <CarrotIcon size={60} color={theme.colors.primary.DEFAULT} />
+            <CarrotIcon size={60} />
           </div>
           <h1 className="text-4xl font-bold text-primary">Karoot!</h1>
           <p className="text-text-muted mt-2">The real-time quiz game</p>

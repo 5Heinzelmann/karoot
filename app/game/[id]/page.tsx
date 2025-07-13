@@ -8,7 +8,6 @@ import { LobbyView } from '@/components/game-states/lobby-view';
 import { GameplayView } from '@/components/game-states/gameplay-view';
 import { ResultsView } from '@/components/game-states/results-view';
 import { CarrotIcon } from '@/components/ui/carrot-icon';
-import { theme } from '@/lib/theme';
 import { createClient } from '@/lib/supabase/client';
 
 // Extend Participant type with scores for our UI
@@ -273,7 +272,7 @@ export default function GamePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <CarrotIcon size={60} color={theme.colors.primary.DEFAULT} className="mx-auto animate-bounce" />
+          <CarrotIcon size={60} className="mx-auto animate-bounce" />
           <p className="mt-4 text-text-muted">Loading...</p>
         </div>
       </div>
@@ -342,7 +341,7 @@ export default function GamePage() {
         return (
           <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="text-center">
-              <CarrotIcon size={60} color={theme.colors.primary.DEFAULT} className="mx-auto animate-bounce" />
+              <CarrotIcon size={60} className="mx-auto animate-bounce" />
               <p className="mt-4 text-text-muted">Loading your results...</p>
             </div>
           </div>

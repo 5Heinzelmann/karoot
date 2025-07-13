@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Participant } from '@/lib/types';
-import { theme } from '@/lib/theme';
 import { CarrotIcon } from './carrot-icon';
 
 interface ParticipantsListProps {
@@ -27,7 +26,7 @@ export function ParticipantsList({
       
       {participants.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-background-muted">
-          <CarrotIcon size={32} color={theme.colors.text.light} />
+          <CarrotIcon size={32} />
           <p className="mt-2 text-text-light">Waiting for participants to join...</p>
         </div>
       ) : (
