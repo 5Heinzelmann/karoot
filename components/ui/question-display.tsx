@@ -34,9 +34,16 @@ export function QuestionDisplay({
     onAnswer?.(optionId);
   };
 
-  const getOptionBackground = (option: Option) => {
+  const getOptionBackground = (option: Option, index: number) => {
+    const defaultColors = [
+      theme.colors.primary.light,    // Orange
+      theme.colors.secondary.light,  // Green
+      theme.colors.earth.pale,       // Light brown
+      theme.colors.warning,          // Amber
+    ];
+
     if (!answered && !showCorrectAnswer) {
-      return selectedOption === option.id ? theme.colors.primary.light : 'white';
+      return selectedOption === option.id ? theme.colors.primary.DEFAULT : defaultColors[index % 4];
     }
 
     if (showCorrectAnswer) {
@@ -48,7 +55,7 @@ export function QuestionDisplay({
       }
     }
 
-    return selectedOption === option.id ? theme.colors.primary.light : 'white';
+    return selectedOption === option.id ? theme.colors.primary.DEFAULT : defaultColors[index % 4];
   };
 
   const getOptionBorder = (option: Option) => {
@@ -82,14 +89,14 @@ export function QuestionDisplay({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {options.map((option) => (
+        {options.map((option, index) => (
           <button
             key={option.id}
             onClick={() => handleOptionClick(option.id)}
             disabled={disabled || answered}
             className="flex items-center justify-center p-6 rounded-lg border-2 shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: getOptionBackground(option),
+              backgroundColor: getOptionBackground(option, index),
               borderColor: getOptionBorder(option),
               color: getOptionTextColor(option),
               opacity: disabled && !answered ? 0.7 : 1,
